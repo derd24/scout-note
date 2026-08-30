@@ -1,0 +1,2627 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scout Note</title>
+<meta name="description" content="Cuaderno de scouting digital: jugadores, preselecciones, formaciones e informes en un solo lugar.">
+<meta property="og:title" content="Scout Note">
+<meta property="og:description" content="Cuaderno de scouting digital: jugadores, preselecciones, formaciones e informes en un solo lugar.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://derd24.github.io/scout-note/">
+<meta property="og:image" content="https://derd24.github.io/scout-note/og-image.png">
+<link id="faviconLink" rel="icon" href="">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+  :root { --brand-primary: #1E4638; --brand-accent: #C9962B; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: #EDEEE6; color: #1F231F; }
+  .disp { font-family: 'Oswald', sans-serif; letter-spacing: 0.02em; }
+  header { background: var(--brand-primary); color: #F3F1E7; padding: 20px 24px; border-bottom: 4px solid var(--brand-accent); }
+  .header-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  .header-brand { display: flex; align-items: center; gap: 12px; }
+  .crest-img { height: 76px; width: 76px; object-fit: contain; border-radius: 8px; background: rgba(255,255,255,0.08); }
+  .title { font-size: 26px; font-weight: 700; text-transform: uppercase; }
+  .subtitle { font-size: 13px; opacity: .75; margin-top: 2px; }
+  .btn { border: none; border-radius: 8px; padding: 10px 18px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-family: inherit; }
+  .btn-gold { background: var(--brand-accent); color: #1F231F; }
+  .btn-outline { background: transparent; color: #F3F1E7; border: 1px solid #F3F1E766; font-weight: 600; }
+  .btn-secondary { background: #fff; border: 1px solid #CFCBBB; font-weight: 600; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px 24px; }
+  .msg { border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; gap: 8px; align-items: center; font-size: 14px; }
+  .msg-ok { background: #EAF3EC; border: 1px solid #1E4638; color: #1E4638; }
+  .msg-err { background: #FBEAE7; border: 1px solid #B23A2E; color: #8A3B32; }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .search-wrap { flex: 1 1 260px; display: flex; align-items: stretch; border: 1px solid #CFCBBB; border-radius: 8px; background: #fff; overflow: hidden; }
+  .search-wrap input { border: none; flex: 1; padding: 10px 12px; font-size: 14px; background: transparent; min-width: 0; border-radius: 0; }
+  .search-wrap input:focus { outline: none; }
+  .search-wrap .ico { display: flex; align-items: center; padding: 0 11px; opacity: .55; font-size: 15px; border-right: 1px solid #EDEEE6; background: #FAF9F5; flex-shrink: 0; }
+  .filters-panel { background: #fff; border: 1px solid #DFDBC9; border-radius: 10px; padding: 16px; margin-bottom: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+  .field label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #6B7268; margin-bottom: 4px; font-weight: 600; }
+  select, input[type=text], input[type=date], input[type=number], input[type=url], input[type=email], input[type=password], textarea {
+    width: 100%; padding: 9px 10px; border-radius: 6px; border: 1px solid #CFCBBB; font-size: 14px; background: #fff; font-family: inherit;
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .card { background: #fff; border: 1px solid #DFDBC9; border-radius: 10px; padding: 16px; cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(20,30,20,.14); }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .card-name { font-size: 17px; font-weight: 600; line-height: 1.25; }
+  .badge { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #fff; padding: 3px 7px; border-radius: 4px; white-space: nowrap; }
+  .card-club { font-size: 13px; color: #4A4F45; margin-top: 6px; }
+  .tagrow { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tag { font-size: 11px; background: #EDEEE6; color: #4A4F45; padding: 3px 8px; border-radius: 5px; font-weight: 500; }
+  .level-line { font-size: 12px; margin-top: 10px; font-weight: 600; }
+  .empty { text-align: center; padding: 60px 20px; color: #6B7268; background: #fff; border: 1px dashed #CFCBBB; border-radius: 10px; }
+  .empty .disp { font-size: 18px; margin-bottom: 6px; color: #1F231F; }
+  .overlay { position: fixed; inset: 0; background: rgba(20,26,20,.55); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+  .modal { background: #fff; border-radius: 14px; padding: 24px; width: 100%; max-width: 640px; max-height: 88vh; overflow-y: auto; }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 10px; }
+  .iconbtn { background: #EDEEE6; border: none; border-radius: 6px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #1F231F; }
+  .iconbtn.danger { color: #B23A2E; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+  .tabbtn { display: flex; align-items: center; padding: 8px 14px; border-radius: 7px; border: 1px solid #CFCBBB; background: #fff; color: #1F231F; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .tabbtn.active { border: 1px solid #1E4638; background: #1E4638; color: #fff; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .full { grid-column: 1 / -1; }
+  .section-title { font-family: 'Oswald', sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--brand-accent); font-weight: 700; margin-bottom: 6px; }
+  .section-body { font-size: 14px; line-height: 1.55; color: #2A2E28; margin-bottom: 16px; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #EDEEE6; }
+  .confirm-box { background: #FBEAE7; border: 1px solid #B23A2E; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 13px; }
+  .spin { animation: spin 1s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .apikey-box { background: #FBF6E8; border: 1px solid #C9962B; border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 13px; }
+  .apikey-box input { margin-top: 6px; }
+  .pitch-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+  .pitch { position: relative; width: 100%; max-width: min(480px, calc(58vh * 0.68)); aspect-ratio: 68 / 100; background: repeating-linear-gradient(to bottom, #2f7a54 0px, #2f7a54 38px, #2a6f4a 38px, #2a6f4a 76px); border: 2px solid #fff; border-radius: 8px; overflow: hidden; margin: 0 auto; }
+  .pitch-halfline { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(255,255,255,0.45); }
+  .pitch-circle { position: absolute; left: 50%; top: 50%; width: 88px; height: 88px; border: 2px solid rgba(255,255,255,0.45); border-radius: 50%; transform: translate(-50%,-50%); }
+  .pitch-box { position: absolute; left: 50%; width: 46%; height: 14%; border: 2px solid rgba(255,255,255,0.4); transform: translateX(-50%); }
+  .pitch-box.top { top: 0; border-top: none; }
+  .pitch-box.bottom { bottom: 0; border-bottom: none; }
+  .pitch-slot { position: absolute; transform: translate(-50%, -50%); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .pitch-chip { width: 30px; height: 30px; border-radius: 8px; background: #fff; color: #1F231F; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; border: none; box-shadow: 0 2px 6px rgba(0,0,0,.35); transition: transform .1s ease; }
+  .pitch-slot:hover .pitch-chip { transform: scale(1.08); }
+  .pitch-slot.pitch-empty .pitch-chip { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,0.14); border: 2px dashed rgba(255,255,255,0.65); color: rgba(255,255,255,0.9); font-size: 16px; font-weight: 400; box-shadow: none; }
+  .pitch-label { font-size: 9.5px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.7); max-width: 80px; text-align: center; line-height: 1.15; white-space: normal; }
+  .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ---- Sidebar layout ---- */
+  .app-shell { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; flex-shrink: 0; background: var(--brand-primary); padding: 20px 14px; display: flex; flex-direction: column; }
+  .sidebar-top-row { display: flex; align-items: center; justify-content: space-between; }
+  .sidebar-nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .sidebar-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding: 0 6px; }
+  .sidebar-crest { height: 40px; width: 40px; object-fit: contain; border-radius: 8px; background: rgba(255,255,255,0.1); }
+  .sidebar-title { color: #F3F1E7; font-weight: 700; font-size: 15px; font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: .02em; }
+  .sidebar-sub { color: #F3F1E766; font-size: 10.5px; margin-top: 1px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; color: #F3F1E7; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: transparent; text-align: left; width: 100%; font-family: inherit; }
+  .nav-item:hover { background: rgba(255,255,255,0.08); }
+  .nav-item.active { background: var(--brand-accent); color: #1F231F; font-weight: 700; }
+  .nav-sep { height: 0.5px; background: #F3F1E733; margin: 10px 4px; }
+  .nav-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #F3F1E766; padding: 4px 10px 4px; }
+  .nav-danger { background: #8A3B3233; color: #F5C9C9; }
+  .nav-danger:hover { background: #8A3B3255; }
+  .sidebar-spacer { flex: 1; }
+  .main-area { flex: 1; min-width: 0; }
+  .main-topbar { padding: 22px 24px 0; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+  .main-title { font-size: 20px; font-weight: 700; font-family: 'Oswald', sans-serif; text-transform: uppercase; color: #1F231F; }
+  .main-sub { font-size: 12px; color: #6B7268; margin-top: 2px; }
+  .nav-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+  .mobile-menu-toggle { display: none; }
+
+  @media (max-width: 900px) {
+    .app-shell { flex-direction: column; }
+    .sidebar { width: 100%; padding: 12px 14px; }
+    .sidebar-brand { margin-bottom: 0; }
+    .mobile-menu-toggle { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 8px; background: rgba(255,255,255,0.1); border: none; color: #F3F1E7; font-size: 18px; cursor: pointer; flex-shrink: 0; }
+    .sidebar-nav { display: none; flex-direction: column; margin-top: 14px; gap: 4px; }
+    .sidebar-nav.open { display: flex; }
+    .sidebar-spacer { display: none; }
+    .main-topbar { padding: 16px 14px 0; }
+  }
+
+  /* ---- Mobile ---- */
+  @media (max-width: 720px) {
+    .container { padding: 14px 12px; }
+    header { padding: 14px 14px; }
+    .header-inner { gap: 10px; }
+    .header-actions { gap: 6px; }
+    .btn { padding: 8px 12px; font-size: 13px; gap: 5px; }
+    .title { font-size: 19px; }
+    .subtitle { font-size: 11px; }
+    .crest-img { height: 48px; width: 48px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .modal { padding: 16px; max-width: calc(100vw - 24px) !important; }
+    .overlay { padding: 8px; }
+    .grid { grid-template-columns: 1fr; }
+    .filters-panel { grid-template-columns: 1fr 1fr; }
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .search-wrap { flex: none; width: 100%; }
+    select, input[type=text], input[type=date], input[type=number], input[type=url], input[type=email], input[type=password], textarea { font-size: 16px; }
+    .login-card { padding: 22px; }
+    .pitch { max-width: min(280px, calc(50vh * 0.68)); }
+    .pitch-chip { width: 24px; height: 24px; font-size: 10px; }
+    .pitch-slot.pitch-empty .pitch-chip { width: 24px; height: 24px; font-size: 12px; }
+    .pitch-label { font-size: 8px; max-width: 60px; }
+  }
+  .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .login-card { background: #fff; border: 1px solid #DFDBC9; border-radius: 14px; padding: 32px; width: 100%; max-width: 380px; }
+  .login-card .disp { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .login-card .sub { font-size: 13px; color: #6B7268; margin-bottom: 20px; }
+  .config-warning { background: #FBEAE7; border: 1px solid #B23A2E; color: #8A3B32; border-radius: 8px; padding: 14px; font-size: 13px; margin: 20px auto; max-width: 600px; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #C9962Baa; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN — completá con los datos de tu proyecto Firebase
+// Firebase Console > Configuración del proyecto (⚙️) > tus apps > SDK setup and configuration
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyCuNcxXTek6BmlZ_CCJj26cGpWWlCYV__U",
+  authDomain: "cuadernoscouting.firebaseapp.com",
+  projectId: "cuadernoscouting",
+  storageBucket: "cuadernoscouting.firebasestorage.app",
+  messagingSenderId: "530934129338",
+  appId: "1:530934129338:web:b0947d3eed271ea32b9883",
+};
+// ============================================================
+
+const APP_VERSION = "v21.0";
+const APIKEY_KEY = "scouting-anthropic-key-v1";
+
+const POSITIONS = [
+  "Arquero", "Lateral Derecho", "Lateral Izquierdo", "Central",
+  "Carrilero Derecho", "Carrilero Izquierdo", "Volante Central (5)",
+  "Volante Central (8)", "Enganche / Mediapunta", "Extremo Derecho",
+  "Extremo Izquierdo", "Segunda Punta", "Delantero Centro",
+];
+const LEAGUES = [
+  "Primera División (ARG)", "Primera Nacional", "Primera B", "Primera C",
+  "Federal A", "Reserva", "Liga Uruguaya", "Liga Colombiana",
+  "Liga Chilena", "Liga Venezolana", "Liga Paraguaya", "Liga Boliviana",
+  "Ligas del Interior", "Ligas Europeas", "Jugador Libre", "Otra",
+];
+const LEVEL_STATUS = ["Para citar ya", "Plantel / rotación", "Jugador de proyección", "A desarrollar", "No da el nivel"];
+const TRACKING_STATUS = ["En seguimiento", "Recomendado", "Descartado", "Fichado"];
+const SOURCES = ["Visto en vivo", "Visto por video", "Recomendación de otro scout", "Redes sociales", "Transfermarkt / prensa", "Otro"];
+const FOOT = ["Derecho", "Izquierdo", "Ambidiestro"];
+const HORIZONS = ["Regional", "Continental", "Europeo"];
+
+// Catálogo de clubes — Primera División, Primera Nacional, Primera B, Primera C y Federal A (Argentina).
+// TRFA queda afuera a propósito (demasiado regional/cambiante para mantener una lista confiable).
+const CLUB_CATALOG = [
+  // Primera División
+  "Aldosivi", "Argentinos Juniors", "Atlético Tucumán", "Banfield", "Barracas Central", "Belgrano",
+  "Boca Juniors", "Central Córdoba (SdE)", "Defensa y Justicia", "Deportivo Riestra", "Estudiantes (LP)",
+  "Estudiantes (RC)", "Gimnasia y Esgrima (LP)", "Gimnasia y Esgrima (M)", "Huracán", "Independiente",
+  "Independiente Rivadavia", "Instituto", "Lanús", "Newell's Old Boys", "Platense", "Racing",
+  "River Plate", "Rosario Central", "San Lorenzo", "Sarmiento (J)", "Talleres (C)", "Tigre", "Unión",
+  "Vélez Sarsfield",
+  // Primera Nacional
+  "Acassuso", "Agropecuario Argentino", "All Boys", "Almagro", "Almirante Brown", "Atlanta",
+  "Atlético de Rafaela", "Central Norte", "Chacarita Juniors", "Chaco For Ever", "Ciudad de Bolívar",
+  "Colegiales", "Colón", "Defensores de Belgrano", "Deportivo Madryn", "Deportivo Maipú",
+  "Deportivo Morón", "Estudiantes (Caseros)", "Ferrocarril Midland", "Ferro Carril Oeste",
+  "Gimnasia y Esgrima (Jujuy)", "Gimnasia y Tiro (Salta)", "Godoy Cruz", "Güemes (SdE)", "Los Andes",
+  "Mitre (SdE)", "Nueva Chicago", "Patronato", "Quilmes", "Racing (Córdoba)", "San Martín (SJ)",
+  "San Martín (Tucumán)", "San Miguel", "San Telmo", "Temperley", "Tristán Suárez",
+  // Primera B Metropolitana
+  "Argentino (Merlo)", "Argentino de Quilmes", "Arsenal de Sarandí", "Brown de Adrogué", "Camioneros",
+  "Comunicaciones", "Defensores Unidos", "Deportivo Armenio", "Deportivo Laferrere", "Deportivo Merlo",
+  "Excursionistas", "Flandria", "Ituzaingó", "Liniers", "Real Pilar", "San Martín (Burzaco)",
+  "Sportivo Dock Sud", "Sportivo Italiano", "Talleres (RdE)", "UAI Urquiza", "Villa Dálmine",
+  "Villa San Carlos",
+  // Primera C Metropolitana
+  "Argentino de Rosario", "Berazategui", "Atlas", "Fénix", "Lugano", "Cañuelas", "Central Ballester",
+  "Central Córdoba (Rosario)", "Centro Español", "Claypole", "Luján", "Defensores de Cambaceres",
+  "Deportivo Español", "Deportivo Paraguayo", "El Porvenir", "Estrella del Sur", "General Lamadrid",
+  "JJ Urquiza", "Juventud Unida (SM)", "Leandro N. Alem", "Leones de Rosario", "Mercedes", "Muñiz",
+  "Puerto Nuevo", "Sacachispas", "Sportivo Barracas", "Victoriano Arenas", "Yupanqui",
+  // Federal A
+  "9 de Julio (Rafaela)", "Alvarado", "Argentino (Monte Maíz)", "Atenas (Río Cuarto)",
+  "Atlético Escobar", "Bartolomé Mitre", "Boca Unidos", "Cipolletti", "Círculo Deportivo",
+  "Costa Brava", "Gimnasia y Esgrima (Chivilcoy)", "Defensores (Villa Ramallo)",
+  "Defensores Puerto Vilelas", "Deportivo Rincón", "Douglas Haig", "El Linqueño", "Germinal",
+  "Gimnasia de Concepción", "Guillermo Brown", "Huracán Las Heras", "Independiente (Chivilcoy)",
+  "Juventud Antoniana", "Juventud Unida (SL)", "Kimberley", "Olimpo", "San Martín (Formosa)",
+  "San Martín (Mendoza)", "Santamarina", "Sarmiento (La Banda)", "Sarmiento (Resistencia)",
+  "Sol de América (Formosa)", "Sol de Mayo", "Sportivo Belgrano", "Villa Mitre",
+];
+
+const FORMATION_PRESETS = {
+  "4-4-2": [4, 4, 2],
+  "4-3-3": [4, 3, 3],
+  "4-2-3-1": [4, 2, 3, 1],
+  "3-5-2": [3, 5, 2],
+  "3-4-3": [3, 4, 3],
+  "5-3-2": [5, 3, 2],
+};
+
+// Genera las posiciones (x%, y%) de cada línea sobre la cancha, arquero incluido.
+// lineCounts: array de líneas de campo, ej [4,4,2] para 4-4-2 (sin contar arquero).
+// Posiciones pensadas a mano por esquema (no reparto matemático parejo).
+// y: 92 = línea de arco propio, ~8-20 = línea de ataque.
+const FORMATION_LAYOUTS = {
+  "4-4-2": [
+    [{ x: 50, y: 90 }],
+    [{ x: 15, y: 72 }, { x: 35, y: 76 }, { x: 65, y: 76 }, { x: 85, y: 72 }],
+    [{ x: 15, y: 48 }, { x: 38, y: 52 }, { x: 62, y: 52 }, { x: 85, y: 48 }],
+    [{ x: 38, y: 20 }, { x: 62, y: 20 }],
+  ],
+  "4-3-3": [
+    [{ x: 50, y: 90 }],
+    [{ x: 15, y: 72 }, { x: 35, y: 76 }, { x: 65, y: 76 }, { x: 85, y: 72 }],
+    [{ x: 28, y: 48 }, { x: 50, y: 58 }, { x: 72, y: 48 }],
+    [{ x: 15, y: 22 }, { x: 50, y: 16 }, { x: 85, y: 22 }],
+  ],
+  "4-2-3-1": [
+    [{ x: 50, y: 90 }],
+    [{ x: 15, y: 72 }, { x: 35, y: 76 }, { x: 65, y: 76 }, { x: 85, y: 72 }],
+    [{ x: 35, y: 58 }, { x: 65, y: 58 }],
+    [{ x: 15, y: 36 }, { x: 50, y: 32 }, { x: 85, y: 36 }],
+    [{ x: 50, y: 14 }],
+  ],
+  "3-5-2": [
+    [{ x: 50, y: 90 }],
+    [{ x: 25, y: 76 }, { x: 50, y: 80 }, { x: 75, y: 76 }],
+    [{ x: 8, y: 52 }, { x: 30, y: 50 }, { x: 50, y: 54 }, { x: 70, y: 50 }, { x: 92, y: 52 }],
+    [{ x: 38, y: 18 }, { x: 62, y: 18 }],
+  ],
+  "3-4-3": [
+    [{ x: 50, y: 90 }],
+    [{ x: 25, y: 76 }, { x: 50, y: 80 }, { x: 75, y: 76 }],
+    [{ x: 12, y: 50 }, { x: 37, y: 52 }, { x: 63, y: 52 }, { x: 88, y: 50 }],
+    [{ x: 18, y: 20 }, { x: 50, y: 14 }, { x: 82, y: 20 }],
+  ],
+  "5-3-2": [
+    [{ x: 50, y: 90 }],
+    [{ x: 8, y: 66 }, { x: 28, y: 76 }, { x: 50, y: 80 }, { x: 72, y: 76 }, { x: 92, y: 66 }],
+    [{ x: 30, y: 48 }, { x: 50, y: 52 }, { x: 70, y: 48 }],
+    [{ x: 38, y: 18 }, { x: 62, y: 18 }],
+  ],
+};
+
+function buildFormationSlots(lineCounts, formationKey) {
+  const layout = formationKey && FORMATION_LAYOUTS[formationKey];
+  const slots = [];
+  if (layout) {
+    layout.forEach((lineArr, li) => {
+      lineArr.forEach((pt, j) => slots.push({ id: `L${li}S${j}`, x: pt.x, y: pt.y, line: li }));
+    });
+    return slots;
+  }
+  // Formación personalizada: sin plantilla a mano, reparto genérico centrado.
+  const lines = [1, ...lineCounts];
+  const n = lines.length;
+  const maxCount = Math.max(...lineCounts, 1);
+  const gridX = maxCount > 1 ? Array.from({ length: maxCount }, (_, i) => 12 + i * (76 / (maxCount - 1))) : [50];
+  lines.forEach((count, li) => {
+    const y = li === 0 ? 92 : 92 - li * (78 / (n - 1));
+    let xs;
+    if (count === 1) {
+      xs = [50];
+    } else if (count === maxCount) {
+      xs = gridX;
+    } else {
+      const start = Math.floor((maxCount - count) / 2);
+      xs = gridX.slice(start, start + count);
+    }
+    xs.forEach((x, j) => slots.push({ id: `L${li}S${j}`, x, y, line: li }));
+  });
+  return slots;
+}
+function parseCustomFormation(text) {
+  const parts = text.split("-").map((p) => parseInt(p.trim(), 10)).filter((n) => !isNaN(n) && n > 0);
+  if (parts.length === 0) return null;
+  const total = parts.reduce((a, b) => a + b, 0);
+  if (total > 10) return null; // + arquero = 11
+  return parts;
+}
+
+const PLAYER_FIELDS = ["name","club","league","primaryPosition","secondaryPosition","foot","height","dob","levelStatus","trackingStatus","source","reviewedOn","transfermarktUrl","youtubeUrl","summary","technical","physical","tactical","potential","potentialHorizon","comparables","weaknesses","notes"];
+
+const EMPTY_PLAYER = {
+  id: null, name: "", club: "", league: "", primaryPosition: "",
+  secondaryPosition: "", foot: "", height: "", dob: "",
+  levelStatus: "", trackingStatus: "En seguimiento", source: "",
+  reviewedOn: "", transfermarktUrl: "", youtubeUrl: "", summary: "",
+  technical: "", physical: "", tactical: "", potential: "",
+  potentialHorizon: "", comparables: "", weaknesses: "", notes: "",
+};
+
+const STATUS_COLORS = {
+  "Para citar ya": "#1E4638", "Plantel / rotación": "#3E6B57",
+  "Jugador de proyección": "#C9962B", "A desarrollar": "#B08A3E",
+  "No da el nivel": "#8A3B32",
+};
+const TRACKING_COLORS = {
+  "En seguimiento": "#2E5E92", "Recomendado": "#1E4638",
+  "Descartado": "#8A3B32", "Fichado": "#C9962B",
+};
+
+let auth = null, db = null, currentUser = null;
+let players = [];
+let preselections = [];
+let lineups = [];
+let reports = [];
+let liveSessions = [];
+let branding = { primaryColor: "#1E4638", accentColor: "#C9962B", crestUrl: "" };
+let currentView = "players"; // "players" | "preselections" | "lineups" | "reports" | "live"
+let mobileMenuOpen = false;
+let search = "";
+let filters = { position: "", league: "", levelStatus: "", trackingStatus: "", source: "", foot: "", club: "" };
+let filtersVisible = false;
+let playersPage = 1;
+const PLAYERS_PER_PAGE = 20;
+let loadingPlayers = false;
+
+function uid() { return "k_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+function esc(s) {
+  if (s === null || s === undefined) return "";
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function calcAge(dob) {
+  if (!dob) return null;
+  const d = new Date(dob);
+  if (isNaN(d)) return null;
+  return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+}
+
+function playerToExcelRow(p) {
+  return {
+    "Nombre": p.name || "",
+    "Club": p.club || "",
+    "Categoría/Liga": p.league || "",
+    "Posición principal": p.primaryPosition || "",
+    "Posición secundaria": p.secondaryPosition || "",
+    "Pie hábil": p.foot || "",
+    "Altura (cm)": p.height || "",
+    "Fecha de nacimiento": p.dob || "",
+    "Edad": calcAge(p.dob) || "",
+    "Nivel": p.levelStatus || "",
+    "Estado de seguimiento": p.trackingStatus || "",
+    "Fuente": p.source || "",
+    "Fecha de revisión": p.reviewedOn || "",
+    "Transfermarkt": p.transfermarktUrl || "",
+    "YouTube": p.youtubeUrl || "",
+    "Resumen": p.summary || "",
+    "Técnica": p.technical || "",
+    "Física": p.physical || "",
+    "Táctica": p.tactical || "",
+    "Potencial": p.potential || "",
+    "Horizonte": p.potentialHorizon || "",
+    "Comparables": p.comparables || "",
+    "Puntos débiles": p.weaknesses || "",
+    "Notas": p.notes || "",
+    "Cargado por": p.createdBy || "",
+  };
+}
+
+function exportPlayersExcel() {
+  if (!window.XLSX) { showMessage(false, "No se pudo cargar la librería de Excel. Revisá tu conexión a internet."); return; }
+  const rows = players.map(playerToExcelRow);
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Jugadores");
+  XLSX.writeFile(wb, `scout_note_jugadores_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+function exportPreselectionExcel(ps, members) {
+  if (!window.XLSX) { showMessage(false, "No se pudo cargar la librería de Excel. Revisá tu conexión a internet."); return; }
+  const rows = members.map(playerToExcelRow);
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  const sheetName = (ps.name || "Preselección").slice(0, 31);
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, `preseleccion_${(ps.name || "lista").replace(/[^a-z0-9]+/gi, "_").toLowerCase()}.xlsx`);
+}
+
+function cleanForFirestore(p) {
+  const out = {};
+  PLAYER_FIELDS.forEach((k) => { out[k] = p[k] || ""; });
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------------
+function isConfigured() {
+  return Object.values(firebaseConfig).every((v) => v && !String(v).includes("PEGA_ACA"));
+}
+
+function boot() {
+  if (!isConfigured()) { renderConfigWarning(); return; }
+  firebase.initializeApp(firebaseConfig);
+  auth = firebase.auth();
+  db = firebase.firestore();
+  auth.onAuthStateChanged((user) => {
+    currentUser = user;
+    if (user) { fetchBranding(); fetchPlayers(); fetchPreselections(); fetchLineups(); fetchReports(); fetchLiveSessions(); } else { renderLogin(); }
+  });
+}
+
+function renderConfigWarning() {
+  document.getElementById("app").innerHTML = `
+    <div class="login-wrap"><div class="config-warning">
+      <strong>Falta configurar la conexión a Firebase.</strong><br><br>
+      Abrí este archivo con un editor de texto y completá el objeto <code>firebaseConfig</code>
+      arriba del todo del &lt;script&gt;, con los datos de tu proyecto (Firebase Console → ⚙️ Configuración del proyecto → tus apps).
+    </div></div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Login
+// ---------------------------------------------------------------------------
+function renderLogin(errorMsg) {
+  document.getElementById("app").innerHTML = `
+    <div class="login-wrap">
+      <div class="login-card">
+        ${branding.crestUrl ? `<img src="${branding.crestUrl}" style="height:64px; width:64px; object-fit:contain; margin-bottom:10px;">` : ""}
+        <div class="disp">Scout Note</div>
+        <div class="sub">Ingresá con la cuenta que te dieron de alta.</div>
+        ${errorMsg ? `<div class="msg msg-err">⚠ ${esc(errorMsg)}</div>` : ""}
+        <div class="field" style="margin-bottom:10px;"><label>Email</label><input type="email" id="loginEmail"></div>
+        <div class="field" style="margin-bottom:16px;"><label>Contraseña</label><input type="password" id="loginPass"></div>
+        <button class="btn btn-gold" id="loginBtn" style="width:100%; justify-content:center;">Ingresar</button>
+      </div>
+    </div>`;
+  document.getElementById("loginBtn").addEventListener("click", doLogin);
+  document.getElementById("loginPass").addEventListener("keydown", (e) => { if (e.key === "Enter") doLogin(); });
+}
+
+const AUTH_ERROR_MAP = {
+  "auth/invalid-credential": "Email o contraseña incorrectos.",
+  "auth/user-not-found": "No existe una cuenta con ese email.",
+  "auth/wrong-password": "Contraseña incorrecta.",
+  "auth/invalid-email": "El email no es válido.",
+  "auth/too-many-requests": "Demasiados intentos. Probá de nuevo en unos minutos.",
+};
+
+async function doLogin() {
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPass").value;
+  const btn = document.getElementById("loginBtn");
+  btn.disabled = true; btn.textContent = "Ingresando...";
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+  } catch (e) {
+    renderLogin(AUTH_ERROR_MAP[e.code] || e.message);
+  }
+}
+async function doLogout() { await auth.signOut(); players = []; }
+
+// ---------------------------------------------------------------------------
+// Datos (Firestore)
+// ---------------------------------------------------------------------------
+async function fetchPlayers() {
+  loadingPlayers = true;
+  renderApp();
+  try {
+    const snap = await db.collection("players").orderBy("createdAt", "desc").get();
+    players = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (e) {
+    showMessage(false, "No se pudieron cargar los jugadores: " + e.message);
+  }
+  loadingPlayers = false;
+  renderApp();
+}
+
+async function insertPlayer(form) {
+  try {
+    const email = currentUser?.email || "desconocido";
+    await db.collection("players").add({
+      ...cleanForFirestore(form),
+      createdBy: email,
+      history: [{ user: email, action: "Creación", timestamp: new Date().toISOString() }],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    return true;
+  } catch (e) { showMessage(false, "No se pudo guardar: " + e.message); return false; }
+}
+async function updatePlayer(form) {
+  try {
+    const email = currentUser?.email || "desconocido";
+    await db.collection("players").doc(form.id).update({
+      ...cleanForFirestore(form),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      history: firebase.firestore.FieldValue.arrayUnion({ user: email, action: "Edición", timestamp: new Date().toISOString() }),
+    });
+    return true;
+  } catch (e) { showMessage(false, "No se pudo guardar: " + e.message); return false; }
+}
+async function deletePlayerRemote(id) {
+  try { await db.collection("players").doc(id).delete(); return true; }
+  catch (e) { showMessage(false, "No se pudo eliminar: " + e.message); return false; }
+}
+async function bulkInsert(list) {
+  try {
+    const email = currentUser?.email || "desconocido";
+    const chunks = [];
+    for (let i = 0; i < list.length; i += 400) chunks.push(list.slice(i, i + 400));
+    for (const chunk of chunks) {
+      const batch = db.batch();
+      chunk.forEach((p) => {
+        const ref = db.collection("players").doc();
+        batch.set(ref, {
+          ...cleanForFirestore(p),
+          createdBy: email,
+          history: [{ user: email, action: "Importado", timestamp: new Date().toISOString() }],
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+      await batch.commit();
+    }
+    return true;
+  } catch (e) { showMessage(false, "No se pudo importar: " + e.message); return false; }
+}
+
+// -- Preselecciones ----------------------------------------------------------
+async function fetchPreselections() {
+  try {
+    const snap = await db.collection("preselections").orderBy("createdAt", "desc").get();
+    preselections = snap.docs.map((d) => ({ id: d.id, playerIds: [], ...d.data() }));
+    if (currentView === "preselections") renderApp();
+  } catch (e) {
+    showMessage(false, "No se pudieron cargar las preselecciones: " + e.message);
+  }
+}
+async function createPreselection(name, initialPlayerId) {
+  try {
+    const ref = await db.collection("preselections").add({
+      name, playerIds: initialPlayerId ? [initialPlayerId] : [],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    await fetchPreselections();
+    return ref.id;
+  } catch (e) { showMessage(false, "No se pudo crear la preselección: " + e.message); return null; }
+}
+async function renamePreselection(id, newName) {
+  try {
+    await db.collection("preselections").doc(id).update({ name: newName });
+    await fetchPreselections();
+    return true;
+  } catch (e) { showMessage(false, "No se pudo renombrar: " + e.message); return false; }
+}
+async function togglePlayerInPreselection(preselectionId, playerId, add) {
+  try {
+    await db.collection("preselections").doc(preselectionId).update({
+      playerIds: add
+        ? firebase.firestore.FieldValue.arrayUnion(playerId)
+        : firebase.firestore.FieldValue.arrayRemove(playerId),
+    });
+    await fetchPreselections();
+    return true;
+  } catch (e) { showMessage(false, "No se pudo actualizar la preselección: " + e.message); return false; }
+}
+// -- Marca / branding ---------------------------------------------------------
+function applyBranding() {
+  document.documentElement.style.setProperty("--brand-primary", branding.primaryColor || "#1E4638");
+  document.documentElement.style.setProperty("--brand-accent", branding.accentColor || "#C9962B");
+  const favicon = document.getElementById("faviconLink");
+  if (favicon) favicon.href = branding.crestUrl || "";
+}
+async function fetchBranding() {
+  try {
+    const doc = await db.collection("settings").doc("branding").get();
+    if (doc.exists) branding = { primaryColor: "#1E4638", accentColor: "#C9962B", crestUrl: "", ...doc.data() };
+    applyBranding();
+    if (document.getElementById("app").innerHTML) renderApp();
+  } catch (e) { /* si no existe todavía, se queda con los valores por defecto */ }
+}
+async function saveBranding(newBranding) {
+  try {
+    await db.collection("settings").doc("branding").set(newBranding, { merge: true });
+    branding = newBranding;
+    applyBranding();
+    return true;
+  } catch (e) { showMessage(false, "No se pudo guardar la marca: " + e.message); return false; }
+}
+
+async function deletePreselectionRemote(id) {
+  try { await db.collection("preselections").doc(id).delete(); await fetchPreselections(); return true; }
+  catch (e) { showMessage(false, "No se pudo eliminar: " + e.message); return false; }
+}
+
+// -- Formaciones (11 titular) -------------------------------------------------
+async function fetchLineups() {
+  try {
+    const snap = await db.collection("lineups").orderBy("createdAt", "desc").get();
+    lineups = snap.docs.map((d) => ({ id: d.id, slots: {}, ...d.data() }));
+    if (currentView === "lineups") renderApp();
+  } catch (e) {
+    showMessage(false, "No se pudieron cargar las formaciones: " + e.message);
+  }
+}
+async function saveLineup(id, data) {
+  try {
+    const email = currentUser?.email || "desconocido";
+    if (id) {
+      await db.collection("lineups").doc(id).update({ ...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    } else {
+      await db.collection("lineups").add({ ...data, createdBy: email, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+    await fetchLineups();
+    return true;
+  } catch (e) { showMessage(false, "No se pudo guardar la formación: " + e.message); return false; }
+}
+async function deleteLineupRemote(id) {
+  try { await db.collection("lineups").doc(id).delete(); await fetchLineups(); return true; }
+  catch (e) { showMessage(false, "No se pudo eliminar: " + e.message); return false; }
+}
+
+// -- Informes -----------------------------------------------------------------
+async function fetchReports() {
+  try {
+    const snap = await db.collection("reports").orderBy("createdAt", "desc").get();
+    reports = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    if (currentView === "reports") renderApp();
+  } catch (e) { showMessage(false, "No se pudieron cargar los informes: " + e.message); }
+}
+async function saveReport(id, data) {
+  try {
+    const email = currentUser?.email || "desconocido";
+    if (id) {
+      await db.collection("reports").doc(id).update({ ...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    } else {
+      await db.collection("reports").add({ ...data, createdBy: email, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+    await fetchReports();
+    return true;
+  } catch (e) { showMessage(false, "No se pudo guardar el informe: " + e.message); return false; }
+}
+async function deleteReportRemote(id) {
+  try { await db.collection("reports").doc(id).delete(); await fetchReports(); return true; }
+  catch (e) { showMessage(false, "No se pudo eliminar: " + e.message); return false; }
+}
+
+// -- Seguimiento en vivo --------------------------------------------------------
+async function fetchLiveSessions() {
+  try {
+    const snap = await db.collection("live_sessions").orderBy("createdAt", "desc").get();
+    liveSessions = snap.docs.map((d) => ({ id: d.id, tracked: [], logsHalf1: [], logsHalf2: [], ...d.data() }));
+    if (currentView === "live") renderApp();
+  } catch (e) { showMessage(false, "No se pudieron cargar las sesiones: " + e.message); }
+}
+async function saveLiveSession(id, data) {
+  try {
+    const email = currentUser?.email || "desconocido";
+    if (id) {
+      await db.collection("live_sessions").doc(id).update({ ...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    } else {
+      await db.collection("live_sessions").add({ ...data, createdBy: email, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+    await fetchLiveSessions();
+    return true;
+  } catch (e) { showMessage(false, "No se pudo guardar la sesión: " + e.message); return false; }
+}
+async function updateClubsFromSides(tracked, localName, visitanteName) {
+  const updates = (tracked || []).filter((t) => t.id && t.side && (t.side === "local" ? localName : visitanteName));
+  if (updates.length === 0) return;
+  try {
+    const batch = db.batch();
+    updates.forEach((t) => {
+      const newClub = t.side === "local" ? localName : visitanteName;
+      batch.update(db.collection("players").doc(t.id), { club: newClub, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    });
+    await batch.commit();
+    await fetchPlayers();
+  } catch (e) {
+    showMessage(false, "No se pudo actualizar el club de algunos jugadores: " + e.message);
+  }
+}
+async function deleteLiveSessionRemote(id) {
+  try { await db.collection("live_sessions").doc(id).delete(); await fetchLiveSessions(); return true; }
+  catch (e) { showMessage(false, "No se pudo eliminar: " + e.message); return false; }
+}
+
+// -- Vaciar toda la base -----------------------------------------------------
+async function wipeAllData() {
+  try {
+    const playersSnap = await db.collection("players").get();
+    const psSnap = await db.collection("preselections").get();
+    const lineupsSnap = await db.collection("lineups").get();
+    const reportsSnap = await db.collection("reports").get();
+    const liveSnap = await db.collection("live_sessions").get();
+    const allDocs = [...playersSnap.docs, ...psSnap.docs, ...lineupsSnap.docs, ...reportsSnap.docs, ...liveSnap.docs];
+    const chunks = [];
+    for (let i = 0; i < allDocs.length; i += 400) chunks.push(allDocs.slice(i, i + 400));
+    for (const chunk of chunks) {
+      const batch = db.batch();
+      chunk.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+    players = [];
+    preselections = [];
+    lineups = [];
+    reports = [];
+    liveSessions = [];
+    return true;
+  } catch (e) {
+    showMessage(false, "No se pudo vaciar la base: " + e.message);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// App shell
+// ---------------------------------------------------------------------------
+const VIEW_TITLES = {
+  players: "Jugadores",
+  preselections: "Preselecciones",
+  lineups: "Formaciones",
+  reports: "Informes",
+  live: "Seguimiento en vivo",
+};
+
+function navItem(id, icon, label, view) {
+  return `<button class="nav-item ${currentView === view ? "active" : ""}" id="${id}"><span class="nav-icon">${icon}</span>${label}</button>`;
+}
+
+function navSectionLabel(text) {
+  return `<div class="nav-section-label">${text}</div>`;
+}
+
+function renderApp() {
+  const app = document.getElementById("app");
+  const playerSub = `${players.length} jugador${players.length !== 1 ? "es" : ""} cargado${players.length !== 1 ? "s" : ""} · ${esc(currentUser?.email || "")} · ${APP_VERSION}`;
+  const subtitles = {
+    players: playerSub,
+    preselections: "Listas de jugadores para compartir con el cuerpo técnico",
+    lineups: "Armá el 11 sobre la cancha, con tu esquema",
+    reports: "Fichas de partido, con puntaje y veredicto",
+    live: "Notas cronometradas durante el partido",
+  };
+  app.innerHTML = `
+    <div class="app-shell">
+      <div class="sidebar">
+        <div class="sidebar-top-row">
+          <div class="sidebar-brand">
+            ${branding.crestUrl ? `<img src="${branding.crestUrl}" class="sidebar-crest" alt="Escudo">` : ""}
+            <div>
+              <div class="sidebar-title">Scout Note</div>
+              <div class="sidebar-sub">${esc(currentUser?.email || "")}</div>
+            </div>
+          </div>
+          <button class="mobile-menu-toggle" id="mobileMenuToggle">${mobileMenuOpen ? "✕" : "☰"}</button>
+        </div>
+        <div class="sidebar-nav ${mobileMenuOpen ? "open" : ""}" id="sidebarNav">
+          ${navSectionLabel("Base de datos")}
+          ${navItem("navPlayersBtn", "👤", "Jugadores", "players")}
+          <button class="nav-item" id="newPlayerBtn"><span class="nav-icon">+</span>Nuevo jugador</button>
+          <div class="nav-sep"></div>
+          ${navSectionLabel("Planificación")}
+          ${navItem("navPreselectionsBtn", "📋", "Preselecciones", "preselections")}
+          ${navItem("navLineupsBtn", "⚽", "Formaciones", "lineups")}
+          <div class="nav-sep"></div>
+          ${navSectionLabel("Campo")}
+          ${navItem("navLiveBtn", "📡", "Seguimiento en vivo", "live")}
+          ${navItem("navReportsBtn", "📄", "Informes", "reports")}
+          <div class="nav-sep"></div>
+          <button class="nav-item" id="settingsBtn"><span class="nav-icon">⚙</span>Configuración</button>
+          <label class="nav-item" style="cursor:pointer;"><span class="nav-icon">⬆</span>Importar<input type="file" id="importInput" accept=".json,application/json" style="display:none;"></label>
+          <button class="nav-item" id="exportExcelBtn"><span class="nav-icon">⬇</span>Exportar Excel</button>
+          <button class="nav-item" id="logoutBtn"><span class="nav-icon">↩</span>Salir</button>
+          <div class="sidebar-spacer"></div>
+          <button class="nav-item nav-danger" id="wipeDbBtn"><span class="nav-icon">🗑</span>Vaciar base</button>
+        </div>
+      </div>
+      <div class="main-area">
+        <div class="main-topbar">
+          <div>
+            <div class="main-title">${VIEW_TITLES[currentView]}</div>
+            <div class="main-sub">${subtitles[currentView]}</div>
+          </div>
+        </div>
+        <div class="container">
+          <div id="messages"></div>
+          ${currentView === "players" ? `
+          <div class="toolbar">
+            <div class="search-wrap"><span class="ico">🔍</span><input type="text" id="searchInput" placeholder="Buscar por nombre o club..." value="${esc(search)}"></div>
+            <button class="btn btn-secondary" id="toggleFiltersBtn">☰ Filtros <span id="filterCount"></span></button>
+          </div>
+          <div class="filters-panel" id="filtersPanel" style="display:none;"></div>
+          <div id="listArea"></div>` :
+          currentView === "preselections" ? `<div id="preselectionsArea"></div>` :
+          currentView === "lineups" ? `<div id="lineupsArea"></div>` :
+          currentView === "reports" ? `<div id="reportsArea"></div>` :
+          `<div id="liveArea"></div>`}
+        </div>
+      </div>
+    </div>
+    <div id="modalRoot"></div>
+  `;
+  if (currentView === "players") {
+    document.getElementById("searchInput").addEventListener("input", (e) => { search = e.target.value; playersPage = 1; renderList(); });
+    document.getElementById("toggleFiltersBtn").addEventListener("click", () => { filtersVisible = !filtersVisible; renderFilters(); renderList(); });
+  }
+  document.getElementById("mobileMenuToggle").addEventListener("click", () => { mobileMenuOpen = !mobileMenuOpen; renderApp(); });
+  document.getElementById("navPlayersBtn").addEventListener("click", () => { currentView = "players"; mobileMenuOpen = false; renderApp(); });
+  document.getElementById("navPreselectionsBtn").addEventListener("click", () => { currentView = "preselections"; mobileMenuOpen = false; renderApp(); });
+  document.getElementById("navLineupsBtn").addEventListener("click", () => { currentView = "lineups"; mobileMenuOpen = false; renderApp(); });
+  document.getElementById("navReportsBtn").addEventListener("click", () => { currentView = "reports"; mobileMenuOpen = false; renderApp(); });
+  document.getElementById("navLiveBtn").addEventListener("click", () => { currentView = "live"; mobileMenuOpen = false; renderApp(); });
+  document.getElementById("newPlayerBtn").addEventListener("click", () => { mobileMenuOpen = false; openForm(null); });
+  document.getElementById("logoutBtn").addEventListener("click", doLogout);
+  document.getElementById("wipeDbBtn").addEventListener("click", () => { mobileMenuOpen = false; openWipeConfirm(); });
+  document.getElementById("settingsBtn").addEventListener("click", () => { mobileMenuOpen = false; openBrandingSettings(); });
+  document.getElementById("exportExcelBtn").addEventListener("click", exportPlayersExcel);
+  document.getElementById("importInput").addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (file) handleImport(file);
+  });
+  if (currentView === "players") { renderFilters(); renderList(); }
+  else if (currentView === "preselections") { renderPreselectionsList(); }
+  else if (currentView === "lineups") { renderLineupsList(); }
+  else if (currentView === "reports") { renderReportsList(); }
+  else { renderLiveList(); }
+}
+
+function showMessage(ok, text) {
+  const el = document.getElementById("messages");
+  if (!el) return;
+  el.innerHTML = `<div class="msg ${ok ? "msg-ok" : "msg-err"}">${ok ? "✓" : "⚠"} ${esc(text)}</div>`;
+  setTimeout(() => { if (el && el.innerHTML.includes(esc(text))) el.innerHTML = ""; }, 5000);
+}
+
+// ---------------------------------------------------------------------------
+// Filtros / lista
+// ---------------------------------------------------------------------------
+function getFiltered() {
+  return players.filter((p) => {
+    if (search) {
+      const q = search.toLowerCase();
+      if (!((p.name || "").toLowerCase().includes(q) || (p.club || "").toLowerCase().includes(q))) return false;
+    }
+    if (filters.position && p.primaryPosition !== filters.position && p.secondaryPosition !== filters.position) return false;
+    if (filters.league && p.league !== filters.league) return false;
+    if (filters.levelStatus && p.levelStatus !== filters.levelStatus) return false;
+    if (filters.trackingStatus && p.trackingStatus !== filters.trackingStatus) return false;
+    if (filters.source && p.source !== filters.source) return false;
+    if (filters.foot && p.foot !== filters.foot) return false;
+    if (filters.club && p.club !== filters.club) return false;
+    return true;
+  });
+}
+function selectOptions(list, current) {
+  return `<option value="">Todas</option>` + list.map((o) => `<option value="${esc(o)}" ${o === current ? "selected" : ""}>${esc(o)}</option>`).join("");
+}
+function filterField(key, label, options) {
+  return `<div class="field"><label>${label}</label><select data-filter-key="${key}">${selectOptions(options, filters[key])}</select></div>`;
+}
+function getDistinctClubs() {
+  const set = new Set(players.map((p) => (p.club || "").trim()).filter(Boolean));
+  return Array.from(set).sort((a, b) => a.localeCompare(b, "es"));
+}
+function getClubSuggestions() {
+  const set = new Set([...CLUB_CATALOG, ...getDistinctClubs()]);
+  return Array.from(set).sort((a, b) => a.localeCompare(b, "es"));
+}
+function renderFilters() {
+  const panel = document.getElementById("filtersPanel");
+  if (!panel) return;
+  panel.style.display = filtersVisible ? "grid" : "none";
+  if (!filtersVisible) return;
+  const activeCount = Object.values(filters).filter(Boolean).length;
+  panel.innerHTML = `
+    ${filterField("position", "Posición", POSITIONS)}
+    ${filterField("club", "Club / Equipo", getDistinctClubs())}
+    ${filterField("league", "Categoría / Liga", LEAGUES)}
+    ${filterField("levelStatus", "Nivel", LEVEL_STATUS)}
+    ${filterField("trackingStatus", "Estado de seguimiento", TRACKING_STATUS)}
+    ${filterField("source", "Fuente", SOURCES)}
+    ${filterField("foot", "Pie hábil", FOOT)}
+    ${activeCount > 0 ? `<button id="clearFiltersBtn" style="align-self:end; background:none; border:none; color:#8A3B32; font-size:13px; cursor:pointer; text-decoration:underline; padding:8px 0;">Limpiar filtros</button>` : ""}
+  `;
+  document.querySelectorAll("[data-filter-key]").forEach((sel) => {
+    sel.addEventListener("change", (e) => { filters[e.target.dataset.filterKey] = e.target.value; playersPage = 1; renderList(); document.getElementById("filterCount").textContent = `(${Object.values(filters).filter(Boolean).length})`; });
+  });
+  const clearBtn = document.getElementById("clearFiltersBtn");
+  if (clearBtn) clearBtn.addEventListener("click", () => { filters = { position: "", league: "", levelStatus: "", trackingStatus: "", source: "", foot: "", club: "" }; playersPage = 1; renderFilters(); renderList(); });
+}
+
+function renderList() {
+  const area = document.getElementById("listArea");
+  if (!area) return;
+  const activeCount = Object.values(filters).filter(Boolean).length;
+  const countEl = document.getElementById("filterCount");
+  if (countEl) countEl.textContent = activeCount > 0 ? `(${activeCount})` : "";
+
+  if (loadingPlayers) { area.innerHTML = `<div style="text-align:center; padding:60px 0;"><span class="spin" style="font-size:24px;">⟳</span></div>`; return; }
+
+  const filtered = getFiltered();
+  if (filtered.length === 0) {
+    area.innerHTML = `<div class="empty">
+      <div class="disp">${players.length === 0 ? "Todavía no cargaste ningún jugador" : "Ningún jugador coincide con estos filtros"}</div>
+      <div>${players.length === 0 ? 'Arrancá con "Nuevo jugador" arriba a la derecha.' : "Probá ajustar o limpiar los filtros."}</div>
+    </div>`;
+    return;
+  }
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PLAYERS_PER_PAGE));
+  if (playersPage > totalPages) playersPage = totalPages;
+  if (playersPage < 1) playersPage = 1;
+  const start = (playersPage - 1) * PLAYERS_PER_PAGE;
+  const pageItems = filtered.slice(start, start + PLAYERS_PER_PAGE);
+
+  area.innerHTML = `
+    <div style="font-size:12px; color:#6B7268; margin-bottom:10px;">Mostrando ${start + 1}–${Math.min(start + PLAYERS_PER_PAGE, filtered.length)} de ${filtered.length}</div>
+    <div class="grid">${pageItems.map(cardHtml).join("")}</div>
+    ${totalPages > 1 ? `
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-top:22px;">
+      <button class="btn btn-secondary" id="pagePrevBtn" ${playersPage === 1 ? "disabled style='opacity:.4; cursor:default;'" : ""}>← Anterior</button>
+      <span style="font-size:13px; color:#4A4F45; font-weight:600;">Página ${playersPage} de ${totalPages}</span>
+      <button class="btn btn-secondary" id="pageNextBtn" ${playersPage === totalPages ? "disabled style='opacity:.4; cursor:default;'" : ""}>Siguiente →</button>
+    </div>` : ""}
+  `;
+  area.querySelectorAll("[data-player-id]").forEach((card) => card.addEventListener("click", () => openDetail(card.dataset.playerId)));
+  const prevBtn = document.getElementById("pagePrevBtn");
+  if (prevBtn) prevBtn.addEventListener("click", () => { playersPage--; renderList(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+  const nextBtn = document.getElementById("pageNextBtn");
+  if (nextBtn) nextBtn.addEventListener("click", () => { playersPage++; renderList(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+}
+
+function cardHtml(p) {
+  const age = calcAge(p.dob);
+  const borderColor = STATUS_COLORS[p.levelStatus] || "#CFCBBB";
+  return `
+  <div class="card" data-player-id="${p.id}" style="border-left:5px solid ${borderColor};">
+    <div class="card-top">
+      <div class="disp card-name">${esc(p.name) || "Sin nombre"}</div>
+      ${p.trackingStatus ? `<span class="badge" style="background:${TRACKING_COLORS[p.trackingStatus] || "#6B7268"};">${esc(p.trackingStatus)}</span>` : ""}
+    </div>
+    <div class="card-club">📍 ${esc(p.club) || "Club no especificado"}</div>
+    <div class="tagrow">
+      ${p.primaryPosition ? `<span class="tag">${esc(p.primaryPosition)}</span>` : ""}
+      ${age ? `<span class="tag">${age} años</span>` : ""}
+      ${p.foot ? `<span class="tag">${esc(p.foot)}</span>` : ""}
+    </div>
+    ${p.levelStatus ? `<div class="level-line" style="color:${STATUS_COLORS[p.levelStatus]};">${esc(p.levelStatus)}</div>` : ""}
+  </div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Preselecciones — vista de listas
+// ---------------------------------------------------------------------------
+function renderPreselectionsList() {
+  const area = document.getElementById("preselectionsArea");
+  if (!area) return;
+  if (preselections.length === 0) {
+    area.innerHTML = `<div class="empty">
+      <div class="disp">Todavía no armaste ninguna preselección</div>
+      <div>Se crean desde la ficha de un jugador, con el botón "➕ Preselección".</div>
+    </div>`;
+    return;
+  }
+  area.innerHTML = `<div class="grid">${preselections.map((ps) => `
+    <div class="card" data-preselection-id="${ps.id}">
+      <div class="disp card-name">${esc(ps.name)}</div>
+      <div class="card-club">${(ps.playerIds || []).length} jugador${(ps.playerIds || []).length !== 1 ? "es" : ""}</div>
+    </div>`).join("")}</div>`;
+  area.querySelectorAll("[data-preselection-id]").forEach((card) => {
+    card.addEventListener("click", () => openPreselectionDetail(card.dataset.preselectionId));
+  });
+}
+
+function openPreselectionDetail(id) {
+  const ps = preselections.find((x) => x.id === id);
+  if (!ps) return;
+  const members = players.filter((p) => (ps.playerIds || []).includes(p.id));
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `
+  <div class="overlay" id="psOverlay">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <div class="disp" id="psNameDisplay" style="font-size:22px; font-weight:700; cursor:pointer;" title="Click para editar el nombre">${esc(ps.name)} <span style="font-size:14px; opacity:.5;">✎</span></div>
+        <div style="display:flex; gap:8px;">
+          <button class="iconbtn danger" id="deletePsBtn">🗑</button>
+          <button class="iconbtn" id="closePsBtn">✕</button>
+        </div>
+      </div>
+      <div id="psRenameArea"></div>
+      <div id="psConfirmArea"></div>
+      <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+        <button class="btn btn-secondary" id="exportTxtBtn">⬇ Exportar .txt</button>
+        <button class="btn btn-secondary" id="exportExcelBtnPs">⬇ Exportar Excel</button>
+        <button class="btn btn-secondary" id="exportPdfBtn">🖨 Exportar PDF</button>
+      </div>
+      ${members.length === 0 ? `<div style="color:#6B7268; font-size:14px;">Todavía no tiene jugadores. Agregalos desde la ficha de cada uno.</div>` : `
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        ${members.map((p) => `
+          <div style="display:flex; justify-content:space-between; align-items:center; border:1px solid #DFDBC9; border-radius:8px; padding:10px 12px;">
+            <div>
+              <div style="font-weight:600;">${esc(p.name)}</div>
+              <div style="font-size:12px; color:#6B7268;">${esc(p.club) || "Sin club"} ${p.primaryPosition ? "· " + esc(p.primaryPosition) : ""}</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="iconbtn" data-view-player="${p.id}">👁</button>
+              <button class="iconbtn danger" data-remove-player="${p.id}">✕</button>
+            </div>
+          </div>`).join("")}
+      </div>`}
+    </div>
+  </div>`;
+  document.getElementById("psOverlay").addEventListener("click", closeModal);
+  document.getElementById("closePsBtn").addEventListener("click", closeModal);
+  document.getElementById("psNameDisplay").addEventListener("click", () => {
+    document.getElementById("psRenameArea").innerHTML = `
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
+        <input type="text" id="psNameInput" value="${esc(ps.name)}" style="flex:1;">
+        <button class="btn btn-gold" id="savePsNameBtn" style="padding:9px 14px;">Guardar</button>
+        <button class="btn btn-secondary" id="cancelPsNameBtn" style="padding:9px 14px;">Cancelar</button>
+      </div>`;
+    const input = document.getElementById("psNameInput");
+    input.focus(); input.select();
+    document.getElementById("savePsNameBtn").addEventListener("click", async () => {
+      const newName = input.value.trim();
+      if (!newName) return;
+      await renamePreselection(ps.id, newName);
+      openPreselectionDetail(ps.id);
+    });
+    document.getElementById("cancelPsNameBtn").addEventListener("click", () => { document.getElementById("psRenameArea").innerHTML = ""; });
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") document.getElementById("savePsNameBtn").click(); });
+  });
+  document.getElementById("exportTxtBtn").addEventListener("click", () => exportPreselectionTxt(ps, members));
+  document.getElementById("exportExcelBtnPs").addEventListener("click", () => exportPreselectionExcel(ps, members));
+  document.getElementById("exportPdfBtn").addEventListener("click", () => exportPreselectionPdf(ps, members));
+  document.getElementById("deletePsBtn").addEventListener("click", () => {
+    document.getElementById("psConfirmArea").innerHTML = `
+      <div class="confirm-box">
+        ¿Eliminar la preselección "${esc(ps.name)}"? Los jugadores no se borran, solo la lista.
+        <div style="margin-top:8px; display:flex; gap:8px;">
+          <button id="confirmDeletePsBtn" style="background:#B23A2E; color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer;">Sí, eliminar</button>
+          <button id="cancelDeletePsBtn" style="background:#fff; border:1px solid #CFCBBB; border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer;">Cancelar</button>
+        </div>
+      </div>`;
+    document.getElementById("confirmDeletePsBtn").addEventListener("click", async () => {
+      const ok = await deletePreselectionRemote(ps.id);
+      if (ok) { closeModal(); renderPreselectionsList(); }
+    });
+    document.getElementById("cancelDeletePsBtn").addEventListener("click", () => { document.getElementById("psConfirmArea").innerHTML = ""; });
+  });
+  root.querySelectorAll("[data-view-player]").forEach((btn) => {
+    btn.addEventListener("click", () => openDetail(btn.dataset.viewPlayer));
+  });
+  root.querySelectorAll("[data-remove-player]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      await togglePlayerInPreselection(ps.id, btn.dataset.removePlayer, false);
+      openPreselectionDetail(ps.id);
+    });
+  });
+}
+
+function exportPreselectionTxt(ps, members) {
+  let text = `PRESELECCIÓN: ${ps.name}\n${"=".repeat(30)}\n\n`;
+  members.forEach((p, i) => {
+    const age = calcAge(p.dob);
+    text += `${i + 1}. ${p.name}\n`;
+    text += `   Club: ${p.club || "-"}${p.league ? " (" + p.league + ")" : ""}\n`;
+    text += `   Posición: ${p.primaryPosition || "-"}${p.secondaryPosition ? " / " + p.secondaryPosition : ""}\n`;
+    text += `   Edad: ${age || "-"}   Pie: ${p.foot || "-"}   Altura: ${p.height ? p.height + " cm" : "-"}\n`;
+    text += `   Nivel: ${p.levelStatus || "-"}\n`;
+    if (p.summary) text += `   Resumen: ${p.summary}\n`;
+    if (p.transfermarktUrl) text += `   Transfermarkt: ${p.transfermarktUrl}\n`;
+    if (p.youtubeUrl) text += `   YouTube: ${p.youtubeUrl}\n`;
+    text += `\n`;
+  });
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `preseleccion_${ps.name.replace(/[^a-z0-9]+/gi, "_").toLowerCase()}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportPreselectionPdf(ps, members) {
+  const win = window.open("", "_blank");
+  const rows = members.map((p, i) => {
+    const age = calcAge(p.dob);
+    return `
+      <div style="page-break-inside:avoid; border-bottom:1px solid #ccc; padding:14px 0;">
+        <div style="font-size:16px; font-weight:700;">${i + 1}. ${esc(p.name)}</div>
+        <div style="font-size:13px; color:#444; margin-top:2px;">${esc(p.club) || "-"}${p.league ? " · " + esc(p.league) : ""}</div>
+        <div style="font-size:13px; margin-top:4px;">
+          Posición: ${esc(p.primaryPosition) || "-"}${p.secondaryPosition ? " / " + esc(p.secondaryPosition) : ""} &nbsp;·&nbsp;
+          Edad: ${age || "-"} &nbsp;·&nbsp; Pie: ${esc(p.foot) || "-"} &nbsp;·&nbsp; Altura: ${p.height ? esc(p.height) + " cm" : "-"}
+        </div>
+        <div style="font-size:13px; margin-top:2px;"><b>Nivel:</b> ${esc(p.levelStatus) || "-"}</div>
+        ${p.summary ? `<div style="font-size:13px; margin-top:4px;">${esc(p.summary)}</div>` : ""}
+      </div>`;
+  }).join("");
+  win.document.write(`
+    <html><head><title>${esc(ps.name)}</title>
+    <style>body{font-family:Arial,sans-serif; padding:30px; color:#1a1a1a;} h1{margin-bottom:4px;} .meta{color:#666; font-size:13px; margin-bottom:20px;} .pdf-header{display:flex; align-items:center; gap:14px; margin-bottom:4px;}</style>
+    </head><body>
+    <div class="pdf-header">
+      ${branding.crestUrl ? `<img src="${branding.crestUrl}" style="height:56px; width:56px; object-fit:contain;">` : ""}
+      <h1 style="margin:0;">${esc(ps.name)}</h1>
+    </div>
+    <div class="meta">${members.length} jugadores · generado el ${new Date().toLocaleDateString("es-AR")}</div>
+    ${rows}
+    </body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 300);
+}
+
+// ---------------------------------------------------------------------------
+// Formaciones — vista de lista
+// ---------------------------------------------------------------------------
+function renderLineupsList() {
+  const area = document.getElementById("lineupsArea");
+  if (!area) return;
+  area.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <button class="btn btn-gold" id="newLineupBtn">+ Nueva formación</button>
+    </div>
+    ${lineups.length === 0 ? `<div class="empty">
+      <div class="disp">Todavía no armaste ningún 11</div>
+      <div>Elegí un esquema táctico y ubicá a tus jugadores sobre la cancha.</div>
+    </div>` : `<div class="grid">${lineups.map((l) => {
+      const filled = Object.values(l.slots || {}).filter(Boolean).length;
+      return `
+      <div class="card" data-lineup-id="${l.id}">
+        <div class="disp card-name">${esc(l.name)}</div>
+        <div class="card-club">${esc(l.formationLabel || "-")}</div>
+        <div class="tagrow"><span class="tag">${filled}/11 ubicados</span></div>
+      </div>`;
+    }).join("")}</div>`}
+  `;
+  const newBtn = document.getElementById("newLineupBtn");
+  if (newBtn) newBtn.addEventListener("click", () => openLineupBuilder(null));
+  area.querySelectorAll("[data-lineup-id]").forEach((card) => {
+    card.addEventListener("click", () => openLineupBuilder(lineups.find((l) => l.id === card.dataset.lineupId)));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Formaciones — armador (cancha)
+// ---------------------------------------------------------------------------
+function openLineupBuilder(initial) {
+  let name = initial ? initial.name : "";
+  let formationKey = initial && initial.formationKey ? initial.formationKey : "4-4-2";
+  let customText = initial && initial.formationKey === "custom" ? (initial.lineCounts || []).join("-") : "";
+  let lineCounts = initial ? (initial.lineCounts || FORMATION_PRESETS["4-4-2"]) : FORMATION_PRESETS["4-4-2"];
+  let slots = initial ? { ...(initial.slots || {}) } : {};
+  let pickingSlotId = null;
+  let pickerSearch = "";
+  let savedScroll = 0;
+  let lastBranch = "main"; // "main" | "pick"
+
+  function currentData() {
+    return {
+      name: name.trim() || "Formación sin nombre",
+      formationKey,
+      formationLabel: formationKey === "custom" ? `Personalizado (${lineCounts.join("-")})` : formationKey,
+      lineCounts,
+      slots,
+    };
+  }
+
+  function render() {
+    const root = document.getElementById("modalRoot");
+    const formationSlots = buildFormationSlots(lineCounts, formationKey);
+    const prevModal = root.querySelector(".modal");
+    if (lastBranch === "main" && prevModal) savedScroll = prevModal.scrollTop;
+    const restoreScroll = () => { const m = root.querySelector(".modal"); if (m) m.scrollTop = savedScroll; };
+
+    if (pickingSlotId) {
+      lastBranch = "pick";
+      const q = pickerSearch.toLowerCase();
+      const options = players.filter((p) => !q || (p.name || "").toLowerCase().includes(q) || (p.club || "").toLowerCase().includes(q));
+      root.innerHTML = `
+      <div class="overlay" id="lineupOverlay">
+        <div class="modal" style="max-width:420px;" onclick="event.stopPropagation()">
+          <div class="modal-head">
+            <div class="disp" style="font-size:18px; font-weight:700;">Elegir jugador</div>
+            <button class="iconbtn" id="closePickBtn">✕</button>
+          </div>
+          <input type="text" id="pickerSearchInput" placeholder="Buscar por nombre o club..." value="${esc(pickerSearch)}" style="margin-bottom:12px;">
+          ${slots[pickingSlotId] ? `<button class="btn btn-secondary" id="clearSlotBtn" style="margin-bottom:10px; width:100%;">Quitar jugador de este puesto</button>` : ""}
+          <div style="display:flex; flex-direction:column; gap:6px; max-height:320px; overflow-y:auto;">
+            ${options.length === 0 ? `<div style="font-size:13px; color:#6B7268;">Sin resultados.</div>` : options.map((p) => `
+              <div data-pick-player="${p.id}" style="padding:8px 10px; border:1px solid #DFDBC9; border-radius:6px; cursor:pointer; font-size:14px;">
+                <b>${esc(p.name)}</b> <span style="color:#6B7268; font-size:12px;">${esc(p.club) || ""} ${p.primaryPosition ? "· " + esc(p.primaryPosition) : ""}</span>
+              </div>`).join("")}
+          </div>
+        </div>
+      </div>`;
+      document.getElementById("lineupOverlay").addEventListener("click", closeModal);
+      document.getElementById("closePickBtn").addEventListener("click", () => { pickingSlotId = null; render(); });
+      const searchInput = document.getElementById("pickerSearchInput");
+      searchInput.focus();
+      searchInput.addEventListener("input", (e) => { pickerSearch = e.target.value; render(); });
+      const clearBtn = document.getElementById("clearSlotBtn");
+      if (clearBtn) clearBtn.addEventListener("click", () => { delete slots[pickingSlotId]; pickingSlotId = null; render(); });
+      root.querySelectorAll("[data-pick-player]").forEach((el) => {
+        el.addEventListener("click", () => { slots[pickingSlotId] = el.dataset.pickPlayer; pickingSlotId = null; render(); });
+      });
+      return;
+    }
+
+    lastBranch = "main";
+    root.innerHTML = `
+    <div class="overlay" id="lineupOverlay">
+      <div class="modal" style="max-width:640px;" onclick="event.stopPropagation()">
+        <div class="modal-head" style="flex-shrink:0;">
+          <div class="disp" style="font-size:18px; font-weight:700;">${initial ? "Editar formación" : "Nueva formación"}</div>
+          <div style="display:flex; gap:8px;">
+            ${initial ? `<button class="iconbtn danger" id="deleteLineupBtn">🗑</button>` : ""}
+            <button class="iconbtn" id="closeLineupBtn">✕</button>
+          </div>
+        </div>
+        <div id="lineupConfirmArea" style="flex-shrink:0;"></div>
+        <div class="field" style="margin-bottom:10px; flex-shrink:0;"><label>Nombre</label><input type="text" id="lineupNameInput" value="${esc(name)}" placeholder="Ej: 11 vs Rival X"></div>
+        <div class="form-grid" style="margin-bottom:4px; flex-shrink:0;">
+          <div class="field"><label>Esquema</label>
+            <select id="formationSelect">
+              ${Object.keys(FORMATION_PRESETS).map((k) => `<option value="${k}" ${formationKey === k ? "selected" : ""}>${k}</option>`).join("")}
+              <option value="custom" ${formationKey === "custom" ? "selected" : ""}>Personalizado...</option>
+            </select>
+          </div>
+          ${formationKey === "custom" ? `<div class="field"><label>Formato (ej: 4-1-4-1)</label><input type="text" id="customFormationInput" value="${esc(customText)}" placeholder="4-1-4-1"></div>` : ""}
+        </div>
+        <div class="pitch-wrap">
+          <div class="pitch">
+            <div class="pitch-halfline"></div>
+            <div class="pitch-circle"></div>
+            <div class="pitch-box top"></div>
+            <div class="pitch-box bottom"></div>
+            ${formationSlots.map((s) => {
+              const p = slots[s.id] ? players.find((pl) => pl.id === slots[s.id]) : null;
+              const lastName = p ? (p.name || "").trim().split(" ").pop() : "";
+              const nameParts = p ? (p.name || "").trim().split(" ") : [];
+              const firstLine = nameParts[0] || "";
+              const secondLine = nameParts.slice(1).join(" ");
+              return `
+              <div class="pitch-slot ${p ? "" : "pitch-empty"}" data-slot-id="${s.id}" style="left:${s.x}%; top:${s.y}%;">
+                <div class="pitch-chip">${p ? esc(lastName.slice(0, 2).toUpperCase()) : "+"}</div>
+                ${p ? `<div class="pitch-label">${esc(firstLine)}${secondLine ? `<br>${esc(secondLine)}` : ""}</div>` : ""}
+              </div>`;
+            }).join("")}
+          </div>
+        </div>
+        <div style="font-size:12px; color:#6B7268; text-align:center; margin-bottom:16px; flex-shrink:0;">Tocá un puesto en la cancha para asignar o cambiar jugador.</div>
+        <div class="modal-footer" style="flex-shrink:0;">
+          <button class="btn btn-secondary" id="exportLineupPdfBtn">🖨 Exportar PDF</button>
+          <button class="btn btn-gold" id="saveLineupBtn">💾 Guardar</button>
+        </div>
+      </div>
+    </div>`;
+    restoreScroll();
+    document.getElementById("lineupOverlay").addEventListener("click", closeModal);
+    document.getElementById("closeLineupBtn").addEventListener("click", closeModal);
+    document.getElementById("lineupNameInput").addEventListener("input", (e) => { name = e.target.value; });
+    document.getElementById("formationSelect").addEventListener("change", (e) => {
+      formationKey = e.target.value;
+      if (formationKey === "custom") { lineCounts = parseCustomFormation(customText) || [4, 4, 2]; }
+      else { lineCounts = FORMATION_PRESETS[formationKey]; }
+      render();
+    });
+    const customInput = document.getElementById("customFormationInput");
+    if (customInput) customInput.addEventListener("input", (e) => {
+      customText = e.target.value;
+      const parsed = parseCustomFormation(customText);
+      if (parsed) lineCounts = parsed;
+    });
+    root.querySelectorAll("[data-slot-id]").forEach((el) => {
+      el.addEventListener("click", () => { pickingSlotId = el.dataset.slotId; pickerSearch = ""; render(); });
+    });
+    document.getElementById("exportLineupPdfBtn").addEventListener("click", () => exportLineupPdf(currentData()));
+    document.getElementById("saveLineupBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("saveLineupBtn");
+      btn.disabled = true; btn.textContent = "Guardando...";
+      const ok = await saveLineup(initial ? initial.id : null, currentData());
+      if (ok) { closeModal(); renderLineupsList(); showMessage(true, "Formación guardada."); }
+      else { btn.disabled = false; btn.textContent = "💾 Guardar"; }
+    });
+    const deleteBtn = document.getElementById("deleteLineupBtn");
+    if (deleteBtn) deleteBtn.addEventListener("click", () => {
+      document.getElementById("lineupConfirmArea").innerHTML = `
+        <div class="confirm-box">
+          ¿Eliminar la formación "${esc(name)}"?
+          <div style="margin-top:8px; display:flex; gap:8px;">
+            <button id="confirmDeleteLineupBtn" style="background:#B23A2E; color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer;">Sí, eliminar</button>
+            <button id="cancelDeleteLineupBtn" style="background:#fff; border:1px solid #CFCBBB; border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer;">Cancelar</button>
+          </div>
+        </div>`;
+      document.getElementById("confirmDeleteLineupBtn").addEventListener("click", async () => {
+        const ok = await deleteLineupRemote(initial.id);
+        if (ok) { closeModal(); renderLineupsList(); }
+      });
+      document.getElementById("cancelDeleteLineupBtn").addEventListener("click", () => { document.getElementById("lineupConfirmArea").innerHTML = ""; });
+    });
+  }
+  render();
+}
+
+function exportLineupPdf(data) {
+  const win = window.open("", "_blank");
+  const formationSlots = buildFormationSlots(data.lineCounts, data.formationKey);
+  const chips = formationSlots.map((s) => {
+    const p = data.slots[s.id] ? players.find((pl) => pl.id === data.slots[s.id]) : null;
+    const nameParts = p ? (p.name || "").trim().split(" ") : [];
+    const lastName = nameParts.length ? nameParts[nameParts.length - 1] : "";
+    const firstLine = nameParts[0] || "";
+    const secondLine = nameParts.slice(1).join(" ");
+    return `
+      <div style="position:absolute; left:${s.x}%; top:${s.y}%; transform:translate(-50%,-50%); text-align:center;">
+        <div style="width:30px; height:30px; border-radius:8px; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,.4); margin:0 auto; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#1F231F;">${p ? esc(lastName.slice(0, 2).toUpperCase()) : ""}</div>
+        ${p ? `<div style="font-size:10px; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.7); max-width:90px; margin-top:2px; line-height:1.2;">${esc(firstLine)}${secondLine ? `<br>${esc(secondLine)}` : ""}</div>` : ""}
+      </div>`;
+  }).join("");
+  win.document.write(`
+    <html><head><title>${esc(data.name)}</title>
+    <style>
+      body{font-family:Arial,sans-serif; padding:30px; color:#1a1a1a; text-align:center;}
+      .pdf-head{display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:6px;}
+      .pitch{position:relative; width:340px; aspect-ratio:68/100; background:repeating-linear-gradient(to bottom, #2f7a54 0px, #2f7a54 27px, #2a6f4a 27px, #2a6f4a 54px); border:2px solid #333; border-radius:8px; margin:20px auto;}
+    </style>
+    </head><body>
+    <div class="pdf-head">
+      ${branding.crestUrl ? `<img src="${branding.crestUrl}" style="height:56px; width:56px; object-fit:contain;">` : ""}
+      <h1 style="margin:0;">${esc(data.name)}</h1>
+    </div>
+    <div style="color:#666; font-size:13px;">${esc(data.formationLabel)} · generado el ${new Date().toLocaleDateString("es-AR")}</div>
+    <div class="pitch">${chips}</div>
+    </body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 300);
+}
+
+const SCORES = ["1","2","3","4","5","6","7","8","9","10"];
+const VEREDICTOS = ["Seguir de cerca", "Recomendar", "Descartar"];
+const VEREDICTO_COLORS = { "Seguir de cerca": "#1E4638", "Recomendar": "#C9962B", "Descartar": "#8A3B32" };
+
+function miniPlayerPicker(onPick, searchState) {
+  const q = (searchState.value || "").toLowerCase();
+  const options = players.filter((p) => !q || (p.name || "").toLowerCase().includes(q) || (p.club || "").toLowerCase().includes(q));
+  return `
+    <input type="text" id="miniPickerSearch" placeholder="Buscar jugador por nombre o club..." value="${esc(searchState.value || "")}" style="margin-bottom:12px;">
+    <div style="display:flex; flex-direction:column; gap:6px; max-height:320px; overflow-y:auto;">
+      ${options.length === 0 ? `<div style="font-size:13px; color:#6B7268;">Sin resultados.</div>` : options.map((p) => `
+        <div data-mini-pick="${p.id}" style="padding:8px 10px; border:1px solid #DFDBC9; border-radius:6px; cursor:pointer; font-size:14px;">
+          <b>${esc(p.name)}</b> <span style="color:#6B7268; font-size:12px;">${esc(p.club) || ""} ${p.primaryPosition ? "· " + esc(p.primaryPosition) : ""}</span>
+        </div>`).join("")}
+    </div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Informes — lista
+// ---------------------------------------------------------------------------
+function renderReportsList() {
+  const area = document.getElementById("reportsArea");
+  if (!area) return;
+  area.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <button class="btn btn-gold" id="newReportBtn">+ Nuevo informe</button>
+    </div>
+    ${reports.length === 0 ? `<div class="empty">
+      <div class="disp">Todavía no armaste ningún informe</div>
+      <div>Elegí un jugador, cargá los datos del partido y quedará listo para exportar.</div>
+    </div>` : `<div class="grid">${reports.map((r) => `
+      <div class="card" data-report-id="${r.id}" style="border-left:5px solid ${VEREDICTO_COLORS[r.veredicto] || "#CFCBBB"};">
+        <div class="card-top">
+          <div class="disp card-name">${esc(r.playerName)}</div>
+          ${r.veredicto ? `<span class="badge" style="background:${VEREDICTO_COLORS[r.veredicto]};">${esc(r.veredicto)}</span>` : ""}
+        </div>
+        <div class="card-club">${r.rival ? "vs. " + esc(r.rival) : ""}${r.fecha ? " · " + esc(r.fecha) : ""}</div>
+        ${r.score ? `<div class="tagrow"><span class="tag">Puntaje: ${esc(r.score)}</span></div>` : ""}
+      </div>`).join("")}</div>`}
+  `;
+  const newBtn = document.getElementById("newReportBtn");
+  if (newBtn) newBtn.addEventListener("click", () => openReportBuilder(null));
+  area.querySelectorAll("[data-report-id]").forEach((card) => {
+    card.addEventListener("click", () => openReportBuilder(reports.find((r) => r.id === card.dataset.reportId)));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Informes — armador
+// ---------------------------------------------------------------------------
+function openReportBuilder(initial, presetPlayer) {
+  const startPlayer = presetPlayer || (initial ? { id: initial.playerId, name: initial.playerName, club: initial.playerClub } : null);
+  let playerId = startPlayer ? startPlayer.id : null;
+  let playerName = startPlayer ? startPlayer.name : "";
+  let playerClub = startPlayer ? startPlayer.club : "";
+  let form = initial ? { ...initial } : {
+    rival: "", fecha: "", minutosVistos: "", resultado: "",
+    technical: "", physical: "", tactical: "", potential: "", potentialHorizon: "",
+    comparables: "", weaknesses: "", score: "", veredicto: "", obs: "",
+  };
+  const pickerSearch = { value: "" };
+
+  function render() {
+    const root = document.getElementById("modalRoot");
+    const prevModal = root.querySelector(".modal");
+    const savedScroll = prevModal ? prevModal.scrollTop : 0;
+    const restoreScroll = () => { const m = root.querySelector(".modal"); if (m) m.scrollTop = savedScroll; };
+
+    if (!playerId) {
+      root.innerHTML = `
+      <div class="overlay" id="reportOverlay">
+        <div class="modal" style="max-width:440px;" onclick="event.stopPropagation()">
+          <div class="modal-head">
+            <div class="disp" style="font-size:18px; font-weight:700;">Elegir jugador para el informe</div>
+            <button class="iconbtn" id="closeReportBtn">✕</button>
+          </div>
+          ${miniPlayerPicker(null, pickerSearch)}
+        </div>
+      </div>`;
+      document.getElementById("reportOverlay").addEventListener("click", closeModal);
+      document.getElementById("closeReportBtn").addEventListener("click", closeModal);
+      document.getElementById("miniPickerSearch").focus();
+      document.getElementById("miniPickerSearch").addEventListener("input", (e) => { pickerSearch.value = e.target.value; render(); });
+      root.querySelectorAll("[data-mini-pick]").forEach((el) => {
+        el.addEventListener("click", () => {
+          const p = players.find((x) => x.id === el.dataset.miniPick);
+          playerId = p.id; playerName = p.name; playerClub = p.club;
+          if (!initial) {
+            form.technical = p.technical || ""; form.physical = p.physical || ""; form.tactical = p.tactical || "";
+            form.potential = p.potential || ""; form.potentialHorizon = p.potentialHorizon || "";
+            form.comparables = p.comparables || ""; form.weaknesses = p.weaknesses || "";
+          }
+          render();
+        });
+      });
+      return;
+    }
+
+    function currentData() {
+      return { playerId, playerName, playerClub, ...form };
+    }
+
+    root.innerHTML = `
+    <div class="overlay" id="reportOverlay">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-head">
+          <div>
+            <div class="disp" style="font-size:19px; font-weight:700;">${esc(playerName)}</div>
+            <div style="font-size:12px; color:#6B7268;">${esc(playerClub)} · Modo informe</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            ${initial ? `<button class="iconbtn danger" id="deleteReportBtn">🗑</button>` : ""}
+            <button class="iconbtn" id="closeReportBtn">✕</button>
+          </div>
+        </div>
+        <div id="reportConfirmArea"></div>
+        <div class="form-grid">
+          <div class="field"><label>Partido / rival</label><input type="text" id="r_rival" value="${esc(form.rival)}"></div>
+          <div class="field"><label>Fecha</label><input type="date" id="r_fecha" value="${esc(form.fecha)}"></div>
+          <div class="field"><label>Minutos vistos</label><input type="text" id="r_minutos" value="${esc(form.minutosVistos)}"></div>
+          <div class="field"><label>Resultado</label><input type="text" id="r_resultado" value="${esc(form.resultado)}"></div>
+        </div>
+        <div class="field"><label>1 · Características técnicas</label><textarea id="r_technical" rows="2">${esc(form.technical)}</textarea></div>
+        <div class="field"><label>2 · Características físicas</label><textarea id="r_physical" rows="2">${esc(form.physical)}</textarea></div>
+        <div class="field"><label>3 · Características tácticas</label><textarea id="r_tactical" rows="2">${esc(form.tactical)}</textarea></div>
+        <div class="form-grid">
+          <div class="field"><label>4 · Potencial</label><textarea id="r_potential" rows="2">${esc(form.potential)}</textarea></div>
+          <div class="field"><label>Horizonte</label>
+            <select id="r_potentialHorizon">
+              <option value="">Seleccionar...</option>
+              ${HORIZONS.map((o) => `<option value="${esc(o)}" ${o === form.potentialHorizon ? "selected" : ""}>${esc(o)}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>5 · Comparables</label><textarea id="r_comparables" rows="2">${esc(form.comparables)}</textarea></div>
+        <div class="field"><label>6 · Puntos débiles</label><textarea id="r_weaknesses" rows="2">${esc(form.weaknesses)}</textarea></div>
+
+        <div style="height:0.5px; background:#EDEEE6; margin:14px 0;"></div>
+
+        <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#6B7268; margin-bottom:6px; font-weight:600;">Valoración global (1-10)</label>
+        <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:14px;" id="scoreRow">
+          ${SCORES.map((s) => `<span data-score="${s}" style="width:30px; height:30px; border-radius:6px; background:${form.score === s ? "var(--brand-accent)" : "#EDEEE6"}; color:${form.score === s ? "#1F231F" : "#6B7268"}; font-size:13px; font-weight:${form.score === s ? "700" : "400"}; display:flex; align-items:center; justify-content:center; cursor:pointer;">${s}</span>`).join("")}
+        </div>
+
+        <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#6B7268; margin-bottom:6px; font-weight:600;">Veredicto</label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;" id="veredictoRow">
+          ${VEREDICTOS.map((v) => `<span data-veredicto="${esc(v)}" style="font-size:12.5px; padding:7px 14px; border-radius:20px; cursor:pointer; ${form.veredicto === v ? `background:${VEREDICTO_COLORS[v]}; color:#fff; font-weight:700;` : "border:1px solid #CFCBBB; color:#6B7268;"}">${esc(v)}</span>`).join("")}
+        </div>
+
+        <div class="field"><label>Observaciones finales</label><textarea id="r_obs" rows="3">${esc(form.obs)}</textarea></div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="exportReportBtn">🖨 Exportar PDF</button>
+          <button class="btn btn-gold" id="saveReportBtn">💾 Guardar</button>
+        </div>
+      </div>
+    </div>`;
+    restoreScroll();
+
+    document.getElementById("reportOverlay").addEventListener("click", closeModal);
+    document.getElementById("closeReportBtn").addEventListener("click", closeModal);
+    root.querySelectorAll("[data-score]").forEach((el) => {
+      el.addEventListener("click", () => { collectForm(); form.score = el.dataset.score; render(); });
+    });
+    root.querySelectorAll("[data-veredicto]").forEach((el) => {
+      el.addEventListener("click", () => { collectForm(); form.veredicto = el.dataset.veredicto; render(); });
+    });
+    document.getElementById("exportReportBtn").addEventListener("click", () => { collectForm(); exportReportPdf(currentData()); });
+    document.getElementById("saveReportBtn").addEventListener("click", doSave);
+    const deleteBtn = document.getElementById("deleteReportBtn");
+    if (deleteBtn) deleteBtn.addEventListener("click", () => {
+      document.getElementById("reportConfirmArea").innerHTML = `
+        <div class="confirm-box">
+          ¿Eliminar este informe de ${esc(playerName)}?
+          <div style="margin-top:8px; display:flex; gap:8px;">
+            <button id="confirmDeleteReportBtn" style="background:#B23A2E; color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer;">Sí, eliminar</button>
+            <button id="cancelDeleteReportBtn" style="background:#fff; border:1px solid #CFCBBB; border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer;">Cancelar</button>
+          </div>
+        </div>`;
+      document.getElementById("confirmDeleteReportBtn").addEventListener("click", async () => {
+        const ok = await deleteReportRemote(initial.id);
+        if (ok) { closeModal(); renderReportsList(); }
+      });
+      document.getElementById("cancelDeleteReportBtn").addEventListener("click", () => { document.getElementById("reportConfirmArea").innerHTML = ""; });
+    });
+
+    function collectForm() {
+      const ids = ["rival","fecha","minutosVistos","resultado","technical","physical","tactical","potential","comparables","weaknesses","obs"];
+      const map = { minutosVistos: "r_minutos", rival: "r_rival", fecha: "r_fecha", resultado: "r_resultado", technical: "r_technical", physical: "r_physical", tactical: "r_tactical", potential: "r_potential", comparables: "r_comparables", weaknesses: "r_weaknesses", obs: "r_obs" };
+      ids.forEach((k) => { const el = document.getElementById(map[k]); if (el) form[k] = el.value; });
+      const horizonEl = document.getElementById("r_potentialHorizon");
+      if (horizonEl) form.potentialHorizon = horizonEl.value;
+    }
+
+    async function doSave() {
+      collectForm();
+      const btn = document.getElementById("saveReportBtn");
+      btn.disabled = true; btn.textContent = "Guardando...";
+      const ok = await saveReport(initial ? initial.id : null, currentData());
+      if (ok) { closeModal(); renderReportsList(); showMessage(true, "Informe guardado."); }
+      else { btn.disabled = false; btn.textContent = "💾 Guardar"; }
+    }
+  }
+  render();
+}
+
+function exportReportPdf(data) {
+  const win = window.open("", "_blank");
+  const scoreHtml = data.score ? `<span style="display:inline-block; width:34px; height:34px; line-height:34px; text-align:center; border-radius:8px; background:#C9962B; color:#1F231F; font-weight:700;">${esc(data.score)}</span>` : "";
+  const section = (title, body) => body ? `<div style="margin-bottom:14px;"><div style="font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:#996B0E; font-weight:700; margin-bottom:3px;">${title}</div><div style="font-size:13px; line-height:1.55;">${esc(body)}</div></div>` : "";
+  win.document.write(`
+    <html><head><title>Informe - ${esc(data.playerName)}</title>
+    <style>body{font-family:Arial,sans-serif; padding:32px; color:#1a1a1a; max-width:680px; margin:0 auto;} h1{margin:0 0 2px;} .meta{color:#666; font-size:13px; margin-bottom:4px;}</style>
+    </head><body>
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:6px;">
+      ${branding.crestUrl ? `<img src="${branding.crestUrl}" style="height:50px; width:50px; object-fit:contain;">` : ""}
+      <div>
+        <h1>${esc(data.playerName)}</h1>
+        <div class="meta">${esc(data.playerClub || "")}</div>
+      </div>
+    </div>
+    <div class="meta">${data.rival ? "vs. " + esc(data.rival) : ""}${data.fecha ? " · " + esc(data.fecha) : ""}${data.minutosVistos ? " · " + esc(data.minutosVistos) + " vistos" : ""}${data.resultado ? " · Resultado: " + esc(data.resultado) : ""}</div>
+    <div style="height:1px; background:#ddd; margin:16px 0;"></div>
+    ${section("1 · Características técnicas", data.technical)}
+    ${section("2 · Características físicas", data.physical)}
+    ${section("3 · Características tácticas", data.tactical)}
+    ${section(`4 · Potencial${data.potentialHorizon ? " (horizonte: " + esc(data.potentialHorizon) + ")" : ""}`, data.potential)}
+    ${section("5 · Comparables", data.comparables)}
+    ${section("6 · Puntos débiles", data.weaknesses)}
+    <div style="display:flex; align-items:center; gap:16px; margin:18px 0;">
+      ${scoreHtml}
+      ${data.veredicto ? `<span style="font-size:13px; font-weight:700; color:#1E4638;">${esc(data.veredicto)}</span>` : ""}
+    </div>
+    ${section("Observaciones finales", data.obs)}
+    </body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 300);
+}
+
+// ---------------------------------------------------------------------------
+// Seguimiento en vivo — símbolos y utilidades
+// ---------------------------------------------------------------------------
+const LIVE_SYMBOLS = [
+  { s: "+", label: "acción positiva", color: "#1E4638", bg: "#EAF3EC" },
+  { s: "−", label: "acción negativa", color: "#8A3B32", bg: "#FBEAE7" },
+  { s: "★", label: "jugada destacada", color: "#996B0E", bg: "#FBF6E8" },
+  { s: "⚠", label: "error / pérdida clave", color: "#8A3B32", bg: "#FBEAE7" },
+  { s: "↑", label: "progresa / gana metros", color: "#2E5E92", bg: "#E8F0F7" },
+  { s: "✓", label: "gol o asistencia", color: "#1E4638", bg: "#EAF3EC" },
+];
+
+function renderLiveList() {
+  const area = document.getElementById("liveArea");
+  if (!area) return;
+  area.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <button class="btn btn-gold" id="newLiveBtn">+ Nuevo seguimiento</button>
+    </div>
+    ${liveSessions.length === 0 ? `<div class="empty">
+      <div class="disp">Todavía no cargaste ningún seguimiento en vivo</div>
+      <div>Se usa durante el partido: sumás jugadores (de tu base o por nombre suelto) y vas anotando por minuto.</div>
+    </div>` : `<div class="grid">${liveSessions.map((s) => `
+      <div class="card" data-live-id="${s.id}">
+        <div class="disp card-name">${esc(s.local) || "Local"} vs ${esc(s.visitante) || "Visitante"}${s.resultado ? ` (${esc(s.resultado)})` : ""}</div>
+        <div class="card-club">${esc(s.fecha) || ""}${s.torneo ? " · " + esc(s.torneo) : ""}</div>
+        <div class="tagrow">
+          <span class="tag">${(s.tracked || []).length} jugador${(s.tracked || []).length !== 1 ? "es" : ""} seguidos</span>
+          ${(s.destacados || []).length > 0 ? `<span class="tag">★ ${(s.destacados || []).length} destacado${(s.destacados || []).length !== 1 ? "s" : ""}</span>` : ""}
+        </div>
+        ${s.createdBy ? `<div style="font-size:11px; color:#6B7268; margin-top:8px;">Cargado por ${esc(s.createdBy)}</div>` : ""}
+        ${s.linkPartido ? `<div style="margin-top:4px;"><a href="${esc(s.linkPartido)}" target="_blank" rel="noreferrer" onclick="event.stopPropagation()">${esc(s.linkPartido)}</a></div>` : ""}
+      </div>`).join("")}</div>`}
+  `;
+  const newBtn = document.getElementById("newLiveBtn");
+  if (newBtn) newBtn.addEventListener("click", () => openLiveBuilder(null));
+  area.querySelectorAll("[data-live-id]").forEach((card) => {
+    card.addEventListener("click", () => openLiveBuilder(liveSessions.find((s) => s.id === card.dataset.liveId)));
+  });
+}
+
+function openLiveBuilder(initial) {
+  let form = initial ? { ...initial, tracked: (initial.tracked || []), destacados: (initial.destacados || []) } : {
+    local: "", visitante: "", fecha: "", torneo: "", resultado: "", linkPartido: "", tracked: [], destacados: [],
+    logsHalf1: [], logsHalf2: [],
+    imgTitularesLocal: "", imgSuplentesLocal: "", imgTitularesVisitante: "", imgSuplentesVisitante: "",
+  };
+  let addingPlayer = false;
+  let addingFreeName = false;
+  let addTarget = "tracked"; // "tracked" | "destacados"
+  let pendingSide = ""; // "local" | "visitante" | "" — se elige al agregar el jugador
+  let activeHalf = "logsHalf1";
+  let selectedTrackedKey = null;
+  let quickMin = "";
+  let savedScroll = 0;
+  let lastBranch = "main"; // "main" | "pick" | "free" — para no perder el scroll al ir y volver del buscador
+  const pickerSearch = { value: "" };
+
+  function sideSelectorHtml() {
+    return `
+      <div style="margin-bottom:12px;">
+        <label style="display:block; font-size:11px; text-transform:uppercase; color:#6B7268; font-weight:600; margin-bottom:6px;">Juega de...</label>
+        <div style="display:flex; gap:8px;">
+          <span data-pending-side="local" style="flex:1; text-align:center; padding:9px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:600; background:${pendingSide === "local" ? "#2E5E92" : "#EDEEE6"}; color:${pendingSide === "local" ? "#fff" : "#4A4F45"};">Local${form.local ? " (" + esc(form.local) + ")" : ""}</span>
+          <span data-pending-side="visitante" style="flex:1; text-align:center; padding:9px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:600; background:${pendingSide === "visitante" ? "#8A3B32" : "#EDEEE6"}; color:${pendingSide === "visitante" ? "#fff" : "#4A4F45"};">Visitante${form.visitante ? " (" + esc(form.visitante) + ")" : ""}</span>
+        </div>
+      </div>`;
+  }
+  function wireSideSelector(root) {
+    root.querySelectorAll("[data-pending-side]").forEach((el) => {
+      el.addEventListener("click", () => {
+        pendingSide = pendingSide === el.dataset.pendingSide ? "" : el.dataset.pendingSide;
+        render();
+      });
+    });
+  }
+
+  function render() {
+    const root = document.getElementById("modalRoot");
+    const prevModal = root.querySelector(".modal");
+    if (lastBranch === "main" && prevModal) savedScroll = prevModal.scrollTop;
+    const restoreScroll = () => { const m = root.querySelector(".modal"); if (m) m.scrollTop = savedScroll; };
+
+    if (addingPlayer) {
+      lastBranch = "pick";
+      root.innerHTML = `
+      <div class="overlay" id="liveOverlay">
+        <div class="modal" style="max-width:420px;" onclick="event.stopPropagation()">
+          <div class="modal-head">
+            <div class="disp" style="font-size:18px; font-weight:700;">Agregar jugador de la base</div>
+            <button class="iconbtn" id="closeLivePickBtn">✕</button>
+          </div>
+          ${addTarget === "tracked" ? sideSelectorHtml() : ""}
+          ${miniPlayerPicker(null, pickerSearch)}
+        </div>
+      </div>`;
+      document.getElementById("liveOverlay").addEventListener("click", closeModal);
+      document.getElementById("closeLivePickBtn").addEventListener("click", () => { addingPlayer = false; pendingSide = ""; render(); });
+      wireSideSelector(root);
+      document.getElementById("miniPickerSearch").focus();
+      document.getElementById("miniPickerSearch").addEventListener("input", (e) => { pickerSearch.value = e.target.value; render(); });
+      root.querySelectorAll("[data-mini-pick]").forEach((el) => {
+        el.addEventListener("click", () => {
+          const p = players.find((x) => x.id === el.dataset.miniPick);
+          if (p) addToTarget(p.id, p.name);
+          addingPlayer = false;
+          pendingSide = "";
+          render();
+        });
+      });
+      return;
+    }
+
+    if (addingFreeName) {
+      lastBranch = "free";
+      root.innerHTML = `
+      <div class="overlay" id="liveOverlay">
+        <div class="modal" style="max-width:380px;" onclick="event.stopPropagation()">
+          <div class="modal-head">
+            <div class="disp" style="font-size:18px; font-weight:700;">Agregar por nombre</div>
+            <button class="iconbtn" id="closeFreeNameBtn">✕</button>
+          </div>
+          <div style="font-size:13px; color:#6B7268; margin-bottom:10px;">Para jugadores del rival o cualquiera que no tengas cargado en tu base todavía.</div>
+          ${addTarget === "tracked" ? sideSelectorHtml() : ""}
+          <input type="text" id="freeNameInput" placeholder="Nombre y apellido" style="margin-bottom:12px;">
+          <button class="btn btn-gold" id="confirmFreeNameBtn" style="width:100%; justify-content:center;">Agregar</button>
+        </div>
+      </div>`;
+      document.getElementById("liveOverlay").addEventListener("click", closeModal);
+      document.getElementById("closeFreeNameBtn").addEventListener("click", () => { addingFreeName = false; pendingSide = ""; render(); });
+      wireSideSelector(root);
+      const inp = document.getElementById("freeNameInput");
+      inp.focus();
+      const confirmAdd = () => {
+        const name = inp.value.trim();
+        if (!name) return;
+        addToTarget(null, name);
+        addingFreeName = false;
+        pendingSide = "";
+        render();
+      };
+      document.getElementById("confirmFreeNameBtn").addEventListener("click", confirmAdd);
+      inp.addEventListener("keydown", (e) => { if (e.key === "Enter") confirmAdd(); });
+      return;
+    }
+
+    lastBranch = "main";
+
+    function addToTarget(id, name) {
+      if (addTarget === "tracked") {
+        if (!form.tracked.some((t) => (id ? t.id === id : t.name === name))) form.tracked.push({ key: uid(), id, name, side: pendingSide });
+      } else {
+        if (!form.destacados.some((t) => (id ? t.id === id : t.name === name))) form.destacados.push({ key: uid(), id, name, youtubeUrl: "", transfermarktUrl: "", note: "" });
+      }
+    }
+
+    function currentData() { return { ...form }; }
+
+    function quickEntryPanel() {
+      return `
+      <div style="background:#F9F8F4; border:1px solid #DFDBC9; border-radius:10px; padding:14px; margin-bottom:12px;">
+        <div style="display:flex; gap:6px; margin-bottom:12px;">
+          <button type="button" class="tabbtn ${activeHalf === "logsHalf1" ? "active" : ""}" data-half-tab="logsHalf1" style="flex:1; justify-content:center;">1er tiempo</button>
+          <button type="button" class="tabbtn ${activeHalf === "logsHalf2" ? "active" : ""}" data-half-tab="logsHalf2" style="flex:1; justify-content:center;">2do tiempo</button>
+        </div>
+
+        <label style="display:block; font-size:11px; text-transform:uppercase; color:#6B7268; font-weight:600; margin-bottom:6px;">Jugador seleccionado (queda fijo hasta que cambies)</label>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;">
+          ${form.tracked.map((t) => {
+            const isSelected = selectedTrackedKey === t.key;
+            const baseColor = isSelected ? "var(--brand-primary)" : "#fff";
+            const textColor = isSelected ? "#fff" : "#1F231F";
+            const borderColor = isSelected ? "var(--brand-primary)" : "#CFCBBB";
+            const sideBadge = t.side === "local" ? `<span style="background:#2E5E92; color:#fff; font-size:9px; font-weight:700; padding:1px 5px; border-radius:4px; margin-left:5px;">L</span>` : t.side === "visitante" ? `<span style="background:#8A3B32; color:#fff; font-size:9px; font-weight:700; padding:1px 5px; border-radius:4px; margin-left:5px;">V</span>` : "";
+            return `
+            <span style="display:inline-flex; align-items:stretch; border-radius:20px; overflow:hidden; border:1px solid ${borderColor};">
+              <span data-select-player="${t.key}" style="padding:8px 6px 8px 12px; font-size:13px; font-weight:600; cursor:pointer; background:${baseColor}; color:${textColor}; display:flex; align-items:center;">${esc(t.name)}${!t.id ? ` <span style="opacity:.7; font-weight:400; margin-left:4px;">(libre)</span>` : ""}${sideBadge}</span>
+              <span data-remove-player="${t.key}" style="padding:8px 10px 8px 6px; cursor:pointer; background:${baseColor}; color:${textColor}; opacity:.75;">✕</span>
+            </span>`;
+          }).join("")}
+          <span id="addPlayerChip" style="padding:8px 12px; border-radius:20px; font-size:13px; border:1px dashed #CFCBBB; color:#6B7268; cursor:pointer;">+ de la base</span>
+          <span id="addFreeChip" style="padding:8px 12px; border-radius:20px; font-size:13px; border:1px dashed #CFCBBB; color:#6B7268; cursor:pointer;">+ por nombre</span>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:4px;">
+            <button type="button" data-min-step="-1" style="width:34px; height:34px; border-radius:6px; border:1px solid #CFCBBB; background:#fff; font-size:17px; cursor:pointer;">−</button>
+            <input type="text" id="quickMinInput" value="${esc(quickMin)}" style="width:52px; text-align:center; padding:8px 4px; font-size:14px;">
+            <button type="button" data-min-step="1" style="width:34px; height:34px; border-radius:6px; border:1px solid #CFCBBB; background:#fff; font-size:17px; cursor:pointer;">+</button>
+            <span style="font-size:12px; color:#6B7268;">min</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            ${LIVE_SYMBOLS.map((sym) => `<span data-quick-symbol="${sym.s}" title="${sym.label}" style="width:42px; height:42px; border-radius:8px; background:${sym.bg}; color:${sym.color}; font-size:19px; font-weight:700; display:flex; align-items:center; justify-content:center; cursor:pointer;">${sym.s}</span>`).join("")}
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function logListHtml(rows) {
+      if (!rows || rows.length === 0) return `<div style="font-size:13px; color:#6B7268; text-align:center; padding:14px 0;">Todavía no hay notas en este tiempo. Elegí un jugador y tocá un símbolo para cargar la primera.</div>`;
+      return rows.map((row, i) => {
+        const t = form.tracked.find((x) => x.key === row.trackedKey);
+        const sym = LIVE_SYMBOLS.find((s) => s.s === row.symbol);
+        const clubName = t && t.side === "local" ? form.local : t && t.side === "visitante" ? form.visitante : "";
+        return `
+        <div style="display:flex; align-items:center; gap:8px; padding:7px 4px; border-bottom:0.5px solid #EDEEE6;">
+          <span style="font-size:12px; color:#6B7268; width:28px; flex-shrink:0;">${esc(row.min || "")}'</span>
+          <span style="width:22px; height:22px; border-radius:5px; background:${sym ? sym.bg : "#EDEEE6"}; color:${sym ? sym.color : "#6B7268"}; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${esc(row.symbol || "")}</span>
+          <span style="width:110px; flex-shrink:0; overflow:hidden;">
+            <span style="display:block; font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(t ? t.name : "—")}</span>
+            ${clubName ? `<span style="display:block; font-size:10px; color:#6B7268; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(clubName)}</span>` : ""}
+          </span>
+          <input type="text" data-log-note="${i}" value="${esc(row.note || "")}" placeholder="nota..." style="flex:1; padding:5px 8px; font-size:12.5px; border:1px solid #EDEEE6; border-radius:5px;">
+          <span data-delete-log="${i}" style="cursor:pointer; color:#8A3B32; font-size:14px; flex-shrink:0;">✕</span>
+        </div>`;
+      }).join("");
+    }
+
+    function imgBox(key, label, dataUrl) {
+      return `
+        <div style="border:1.5px dashed ${dataUrl ? "var(--brand-primary)" : "#CFCBBB"}; border-radius:10px; padding:10px; background:${dataUrl ? "#EAF3EC" : "#F9F8F4"};">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="font-size:11.5px; font-weight:700; color:${dataUrl ? "var(--brand-primary)" : "#6B7268"};">📷 ${esc(label)}</span>
+            ${dataUrl ? `<span data-remove-img="${key}" style="cursor:pointer; color:#8A3B32; font-size:12px;">Quitar</span>` : ""}
+          </div>
+          ${dataUrl
+            ? `<img src="${dataUrl}" style="width:100%; max-height:140px; object-fit:contain; border-radius:6px; background:#fff;">`
+            : `<label style="display:flex; align-items:center; justify-content:center; height:70px; border-radius:6px; background:#fff; cursor:pointer; color:#CFCBBB; font-size:22px;">+<input type="file" accept="image/*" data-img-input="${key}" style="display:none;"></label>`
+          }
+        </div>`;
+    }
+
+    function destacadosHtml() {
+      const trackedNotYetDestacado = form.tracked.filter((t) => !form.destacados.some((d) => d.key === t.key || (t.id && d.id === t.id) || (!t.id && d.name === t.name)));
+      return `
+      <div style="background:#FBF6E8; border:1px solid #C9962B; border-radius:10px; padding:14px; margin-bottom:16px;">
+        ${form.destacados.length === 0 ? `<div style="font-size:13px; color:#6B7268; margin-bottom:10px;">Todavía no marcaste a nadie como destacado.</div>` : `
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;">
+          ${form.destacados.map((d, i) => `
+            <div style="background:#fff; border:1px solid #EADFC0; border-radius:8px; padding:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-weight:700; font-size:13.5px; color:#1F231F;">${esc(d.name)}${!d.id ? ` <span style="font-weight:400; opacity:.7; font-size:12px;">(libre)</span>` : ""}</span>
+                <span data-remove-destacado="${i}" style="cursor:pointer; color:#8A3B32; font-size:13px;">✕</span>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+                <input type="text" data-destacado-field="youtubeUrl" data-destacado-idx="${i}" value="${esc(d.youtubeUrl)}" placeholder="Link de YouTube">
+                <input type="text" data-destacado-field="transfermarktUrl" data-destacado-idx="${i}" value="${esc(d.transfermarktUrl)}" placeholder="Link de Transfermarkt">
+              </div>
+              <textarea data-destacado-field="note" data-destacado-idx="${i}" rows="2" placeholder="Nota libre — por qué se destacó...">${esc(d.note)}</textarea>
+            </div>`).join("")}
+        </div>`}
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          ${trackedNotYetDestacado.map((t) => `<span data-quick-destacado="${t.key}" style="padding:7px 12px; border-radius:20px; font-size:12.5px; border:1px dashed #C9962B; color:#996B0E; cursor:pointer;">★ ${esc(t.name)}</span>`).join("")}
+          <span id="addDestacadoBaseChip" style="padding:7px 12px; border-radius:20px; font-size:12.5px; border:1px dashed #C9962B; color:#996B0E; cursor:pointer;">+ de la base</span>
+          <span id="addDestacadoFreeChip" style="padding:7px 12px; border-radius:20px; font-size:12.5px; border:1px dashed #C9962B; color:#996B0E; cursor:pointer;">+ por nombre</span>
+        </div>
+      </div>`;
+    }
+
+    root.innerHTML = `
+    <div class="overlay" id="liveOverlay">
+      <div class="modal" style="max-width:760px;" onclick="event.stopPropagation()">
+        <div class="modal-head">
+          <div class="disp" style="font-size:19px; font-weight:700;">${initial ? "Editar seguimiento" : "Nuevo seguimiento en vivo"}</div>
+          <div style="display:flex; gap:8px;">
+            ${initial ? `<button class="iconbtn danger" id="deleteLiveBtn">🗑</button>` : ""}
+            <button class="iconbtn" id="closeLiveBtn">✕</button>
+          </div>
+        </div>
+        <div id="liveConfirmArea"></div>
+        ${initial && initial.createdBy ? `<div style="font-size:12px; color:#6B7268; margin-bottom:12px;">Cargado por <b>${esc(initial.createdBy)}</b></div>` : ""}
+        <div class="form-grid">
+          <div class="field"><label>Local</label><input type="text" id="l_local" value="${esc(form.local)}" list="clubDatalist"></div>
+          <div class="field"><label>Visitante</label><input type="text" id="l_visitante" value="${esc(form.visitante)}" list="clubDatalist"></div>
+          <datalist id="clubDatalist">${getClubSuggestions().map((c) => `<option value="${esc(c)}">`).join("")}</datalist>
+          <div class="field"><label>Fecha</label><input type="date" id="l_fecha" value="${esc(form.fecha)}"></div>
+          <div class="field"><label>Torneo</label><input type="text" id="l_torneo" value="${esc(form.torneo)}" placeholder="Ej: Reserva - Primera Nacional"></div>
+          <div class="field"><label>Resultado</label><input type="text" id="l_resultado" value="${esc(form.resultado)}" placeholder="Ej: 2-1"></div>
+          <div class="field full"><label>Link del partido (si hay)</label><input type="text" id="l_linkPartido" value="${esc(form.linkPartido)}" placeholder="https://..."></div>
+        </div>
+
+        <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#6B7268; margin-bottom:6px; font-weight:600;">Formaciones (foto)</label>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px;">
+          ${imgBox("imgTitularesLocal", "Titulares — Local", form.imgTitularesLocal)}
+          ${imgBox("imgSuplentesLocal", "Suplentes — Local", form.imgSuplentesLocal)}
+          ${imgBox("imgTitularesVisitante", "Titulares — Visitante", form.imgTitularesVisitante)}
+          ${imgBox("imgSuplentesVisitante", "Suplentes — Visitante", form.imgSuplentesVisitante)}
+        </div>
+
+        <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#6B7268; margin-bottom:6px; font-weight:600;">Notas del partido</label>
+        ${quickEntryPanel()}
+        ${logListHtml(form[activeHalf])}
+
+        <div style="height:0.5px; background:#EDEEE6; margin:16px 0;"></div>
+
+        <label style="display:block; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#6B7268; margin-bottom:6px; font-weight:600;">★ Destacados del partido</label>
+        ${destacadosHtml()}
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="exportLiveTxtBtn">⬇ Exportar .txt</button>
+          <button class="btn btn-secondary" id="exportLivePdfBtn">🖨 Exportar PDF</button>
+          <button class="btn btn-gold" id="saveLiveBtn">💾 Guardar</button>
+        </div>
+      </div>
+    </div>`;
+    restoreScroll();
+
+    document.getElementById("liveOverlay").addEventListener("click", closeModal);
+    document.getElementById("closeLiveBtn").addEventListener("click", closeModal);
+    document.getElementById("addPlayerChip").addEventListener("click", () => { collectForm(); addTarget = "tracked"; addingPlayer = true; pickerSearch.value = ""; render(); });
+    document.getElementById("addFreeChip").addEventListener("click", () => { collectForm(); addTarget = "tracked"; addingFreeName = true; render(); });
+    document.getElementById("addDestacadoBaseChip").addEventListener("click", () => { collectForm(); addTarget = "destacados"; addingPlayer = true; pickerSearch.value = ""; render(); });
+    document.getElementById("addDestacadoFreeChip").addEventListener("click", () => { collectForm(); addTarget = "destacados"; addingFreeName = true; render(); });
+    root.querySelectorAll("[data-quick-destacado]").forEach((el) => {
+      el.addEventListener("click", () => {
+        collectForm();
+        const t = form.tracked.find((x) => x.key === el.dataset.quickDestacado);
+        if (t) form.destacados.push({ key: uid(), id: t.id, name: t.name, youtubeUrl: "", transfermarktUrl: "", note: "" });
+        render();
+      });
+    });
+    root.querySelectorAll("[data-remove-destacado]").forEach((el) => {
+      el.addEventListener("click", () => { collectForm(); form.destacados.splice(parseInt(el.dataset.removeDestacado, 10), 1); render(); });
+    });
+    root.querySelectorAll("[data-img-input]").forEach((el) => {
+      el.addEventListener("change", (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        collectForm();
+        resizeImageToDataUrl(file, 700, (dataUrl) => { form[el.dataset.imgInput] = dataUrl; render(); });
+      });
+    });
+    root.querySelectorAll("[data-remove-img]").forEach((el) => {
+      el.addEventListener("click", () => { collectForm(); form[el.dataset.removeImg] = ""; render(); });
+    });
+    root.querySelectorAll("[data-remove-player]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        collectForm();
+        form.tracked = form.tracked.filter((t) => t.key !== el.dataset.removePlayer);
+        if (selectedTrackedKey === el.dataset.removePlayer) selectedTrackedKey = null;
+        render();
+      });
+    });
+    root.querySelectorAll("[data-half-tab]").forEach((el) => {
+      el.addEventListener("click", () => { collectForm(); activeHalf = el.dataset.halfTab; render(); });
+    });
+    root.querySelectorAll("[data-select-player]").forEach((el) => {
+      el.addEventListener("click", () => {
+        collectForm();
+        selectedTrackedKey = selectedTrackedKey === el.dataset.selectPlayer ? null : el.dataset.selectPlayer;
+        render();
+      });
+    });
+    root.querySelectorAll("[data-min-step]").forEach((el) => {
+      el.addEventListener("click", () => {
+        collectForm();
+        const cur = parseInt(quickMin, 10) || 0;
+        quickMin = String(Math.max(0, cur + parseInt(el.dataset.minStep, 10)));
+        render();
+      });
+    });
+    root.querySelectorAll("[data-quick-symbol]").forEach((el) => {
+      el.addEventListener("click", () => {
+        collectForm();
+        form[activeHalf].push({ min: quickMin, trackedKey: selectedTrackedKey, symbol: el.dataset.quickSymbol, note: "" });
+        render();
+        const noteInputs = document.querySelectorAll("[data-log-note]");
+        if (noteInputs.length) noteInputs[noteInputs.length - 1].focus();
+      });
+    });
+    root.querySelectorAll("[data-delete-log]").forEach((el) => {
+      el.addEventListener("click", () => { collectForm(); form[activeHalf].splice(parseInt(el.dataset.deleteLog, 10), 1); render(); });
+    });
+    document.getElementById("exportLiveTxtBtn").addEventListener("click", () => { collectForm(); exportLiveTxt(currentData()); });
+    document.getElementById("exportLivePdfBtn").addEventListener("click", () => { collectForm(); exportLivePdf(currentData()); });
+    document.getElementById("saveLiveBtn").addEventListener("click", doSave);
+    const deleteBtn = document.getElementById("deleteLiveBtn");
+    if (deleteBtn) deleteBtn.addEventListener("click", () => {
+      document.getElementById("liveConfirmArea").innerHTML = `
+        <div class="confirm-box">
+          ¿Eliminar este seguimiento?
+          <div style="margin-top:8px; display:flex; gap:8px;">
+            <button id="confirmDeleteLiveBtn" style="background:#B23A2E; color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer;">Sí, eliminar</button>
+            <button id="cancelDeleteLiveBtn" style="background:#fff; border:1px solid #CFCBBB; border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer;">Cancelar</button>
+          </div>
+        </div>`;
+      document.getElementById("confirmDeleteLiveBtn").addEventListener("click", async () => {
+        const ok = await deleteLiveSessionRemote(initial.id);
+        if (ok) { closeModal(); renderLiveList(); }
+      });
+      document.getElementById("cancelDeleteLiveBtn").addEventListener("click", () => { document.getElementById("liveConfirmArea").innerHTML = ""; });
+    });
+
+    function collectForm() {
+      const g = (id) => document.getElementById(id);
+      if (g("l_local")) form.local = g("l_local").value;
+      if (g("l_visitante")) form.visitante = g("l_visitante").value;
+      if (g("l_fecha")) form.fecha = g("l_fecha").value;
+      if (g("l_torneo")) form.torneo = g("l_torneo").value;
+      if (g("l_resultado")) form.resultado = g("l_resultado").value;
+      if (g("l_linkPartido")) form.linkPartido = g("l_linkPartido").value;
+      if (g("quickMinInput")) quickMin = g("quickMinInput").value;
+      root.querySelectorAll("[data-log-note]").forEach((inp) => {
+        const idx = parseInt(inp.dataset.logNote, 10);
+        if (form[activeHalf][idx]) form[activeHalf][idx].note = inp.value;
+      });
+      root.querySelectorAll("[data-destacado-field]").forEach((inp) => {
+        const idx = parseInt(inp.dataset.destacadoIdx, 10);
+        if (form.destacados[idx]) form.destacados[idx][inp.dataset.destacadoField] = inp.value;
+      });
+    }
+
+    async function doSave() {
+      collectForm();
+      const btn = document.getElementById("saveLiveBtn");
+      btn.disabled = true; btn.textContent = "Guardando...";
+      const ok = await saveLiveSession(initial ? initial.id : null, currentData());
+      if (ok) {
+        await updateClubsFromSides(form.tracked, form.local, form.visitante);
+        closeModal(); renderLiveList(); showMessage(true, "Seguimiento guardado.");
+      }
+      else { btn.disabled = false; btn.textContent = "💾 Guardar"; }
+    }
+  }
+  render();
+}
+
+function exportLiveTxt(data) {
+  let text = `SEGUIMIENTO EN VIVO\n${data.local || "Local"} vs ${data.visitante || "Visitante"}${data.resultado ? " (" + data.resultado + ")" : ""}\n${data.fecha || ""}${data.torneo ? " · " + data.torneo : ""}\n${data.linkPartido ? "Link: " + data.linkPartido + "\n" : ""}${"=".repeat(30)}\n\n`;
+  const writeHalf = (title, rows) => {
+    text += `${title}\n`;
+    if (rows.length === 0) text += "  (sin notas)\n";
+    rows.forEach((r) => {
+      const t = (data.tracked || []).find((x) => x.key === r.trackedKey);
+      const club = t && t.side === "local" ? data.local : t && t.side === "visitante" ? data.visitante : "";
+      text += `  ${r.min || "?"}' ${r.symbol || ""} ${t ? t.name : "?"}${club ? " (" + club + ")" : ""}: ${r.note || ""}\n`;
+    });
+    text += "\n";
+  };
+  writeHalf("1ER TIEMPO", data.logsHalf1 || []);
+  writeHalf("2DO TIEMPO", data.logsHalf2 || []);
+  const destacados = data.destacados || [];
+  if (destacados.length > 0) {
+    text += `DESTACADOS DEL PARTIDO\n`;
+    destacados.forEach((d) => {
+      text += `  ★ ${d.name}${!d.id ? " (libre)" : ""}\n`;
+      if (d.youtubeUrl) text += `    YouTube: ${d.youtubeUrl}\n`;
+      if (d.transfermarktUrl) text += `    Transfermarkt: ${d.transfermarktUrl}\n`;
+      if (d.note) text += `    Nota: ${d.note}\n`;
+    });
+  }
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `seguimiento_${(data.local || "partido").replace(/[^a-z0-9]+/gi, "_").toLowerCase()}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportLivePdf(data) {
+  const win = window.open("", "_blank");
+  const symColor = { "+": "#1E4638", "−": "#8A3B32", "★": "#996B0E", "⚠": "#8A3B32", "↑": "#2E5E92", "✓": "#1E4638" };
+  const halfHtml = (title, rows) => {
+    if (!rows || rows.length === 0) return `<div style="margin-bottom:16px;"><div style="font-size:12px; font-weight:700; text-transform:uppercase; color:#996B0E; margin-bottom:6px;">${title}</div><div style="font-size:12.5px; color:#666;">Sin notas cargadas.</div></div>`;
+    const items = rows.map((r) => {
+      const t = (data.tracked || []).find((x) => x.key === r.trackedKey);
+      const color = symColor[r.symbol] || "#333";
+      const club = t && t.side === "local" ? data.local : t && t.side === "visitante" ? data.visitante : "";
+      return `<tr style="border-top:1px solid #eee;">
+        <td style="padding:6px 4px; font-size:12px; color:#666; width:36px; vertical-align:top;">${esc(r.min || "")}'</td>
+        <td style="padding:6px 4px; font-size:12.5px; font-weight:700; width:110px; vertical-align:top;">${esc(t ? t.name : "?")}${club ? `<div style="font-size:10.5px; font-weight:400; color:#666;">${esc(club)}</div>` : ""}</td>
+        <td style="padding:6px 4px; font-size:12.5px; vertical-align:top;">${r.symbol ? `<b style="color:${color};">${esc(r.symbol)}</b> ` : ""}${esc(r.note || "")}</td>
+      </tr>`;
+    }).join("");
+    return `<div style="margin-bottom:16px;">
+      <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:#996B0E; margin-bottom:6px;">${title}</div>
+      <table style="width:100%; border-collapse:collapse;">${items}</table>
+    </div>`;
+  };
+  const formationImgsHtml = () => {
+    const boxes = [
+      ["Titulares — " + (data.local || "Local"), data.imgTitularesLocal],
+      ["Suplentes — " + (data.local || "Local"), data.imgSuplentesLocal],
+      ["Titulares — " + (data.visitante || "Visitante"), data.imgTitularesVisitante],
+      ["Suplentes — " + (data.visitante || "Visitante"), data.imgSuplentesVisitante],
+    ].filter(([, url]) => url);
+    if (boxes.length === 0) return "";
+    return `
+      <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:#996B0E; margin-bottom:8px;">Formaciones</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px;">
+        ${boxes.map(([label, url]) => `
+          <div>
+            <div style="font-size:11px; font-weight:700; color:#333; margin-bottom:4px;">${esc(label)}</div>
+            <img src="${url}" style="width:100%; max-height:220px; object-fit:contain; border:1px solid #ddd; border-radius:6px;">
+          </div>`).join("")}
+      </div>`;
+  };
+  win.document.write(`
+    <html><head><title>${esc(data.local || "Local")} vs ${esc(data.visitante || "Visitante")}</title>
+    <style>body{font-family:Arial,sans-serif; padding:30px; color:#1a1a1a; max-width:680px; margin:0 auto;} h1{margin:0 0 2px; font-size:22px;} .meta{color:#666; font-size:13px; margin-bottom:16px;}</style>
+    </head><body>
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:6px;">
+      ${branding.crestUrl ? `<img src="${branding.crestUrl}" style="height:50px; width:50px; object-fit:contain;">` : ""}
+      <h1>${esc(data.local || "Local")} vs ${esc(data.visitante || "Visitante")}${data.resultado ? ` <span style="color:#996B0E;">(${esc(data.resultado)})</span>` : ""}</h1>
+    </div>
+    <div class="meta">${esc(data.fecha || "")}${data.torneo ? " · " + esc(data.torneo) : ""} · generado el ${new Date().toLocaleDateString("es-AR")}${data.createdBy ? " · cargado por " + esc(data.createdBy) : ""}</div>
+    ${data.linkPartido ? `<div class="meta">Link: <a href="${esc(data.linkPartido)}">${esc(data.linkPartido)}</a></div>` : ""}
+    ${formationImgsHtml()}
+    ${halfHtml("1er tiempo", data.logsHalf1)}
+    ${halfHtml("2do tiempo", data.logsHalf2)}
+    <div style="height:1px; background:#ddd; margin:16px 0;"></div>
+    ${(data.destacados || []).length > 0 ? `
+    <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:#996B0E; margin-bottom:8px;">★ Destacados del partido</div>
+    <div style="margin-bottom:16px;">
+      ${(data.destacados || []).map((d) => `
+        <div style="border:1px solid #eee; border-radius:6px; padding:10px; margin-bottom:8px;">
+          <div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">★ ${esc(d.name)}${!d.id ? ` <span style="font-weight:400; color:#666; font-size:12px;">(libre)</span>` : ""}</div>
+          ${d.youtubeUrl ? `<div style="font-size:12px; color:#B23A2E;">▶ YouTube: ${esc(d.youtubeUrl)}</div>` : ""}
+          ${d.transfermarktUrl ? `<div style="font-size:12px; color:#1E4638;">Transfermarkt: ${esc(d.transfermarktUrl)}</div>` : ""}
+          ${d.note ? `<div style="font-size:12.5px; color:#333; margin-top:4px;">${esc(d.note)}</div>` : ""}
+        </div>`).join("")}
+    </div>` : ""}
+    </body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 300);
+}
+
+// ---------------------------------------------------------------------------
+// Detalle
+// ---------------------------------------------------------------------------
+function formatHistoryDate(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("es-AR") + " " + d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  } catch (e) { return iso || ""; }
+}
+
+function openDetail(id) {
+  let historyOpen = false;
+
+  function render() {
+    const p = players.find((x) => String(x.id) === String(id));
+    if (!p) return;
+    const age = calcAge(p.dob);
+    const history = (p.history || []).slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const historyAsc = (p.history || []).slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const creatorEntry = historyAsc.find((h) => h.action === "Creación" || h.action === "Importado") || historyAsc[0];
+    const createdByDisplay = p.createdBy || (creatorEntry ? creatorEntry.user : null);
+    const root = document.getElementById("modalRoot");
+    root.innerHTML = `
+    <div class="overlay" id="detailOverlay">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-head">
+          <div>
+            <div class="disp" style="font-size:24px; font-weight:700;">${esc(p.name)}</div>
+            <div style="font-size:14px; color:#6B7268; margin-top:2px;">${esc(p.club)}${p.league ? " · " + esc(p.league) : ""}</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="iconbtn" id="addToPsBtn" title="Agregar a preselección">📋+</button>
+            <button class="iconbtn" id="newReportFromPlayerBtn" title="Nuevo informe">📄+</button>
+            <button class="iconbtn" id="editBtn">✎</button>
+            <button class="iconbtn danger" id="deleteBtn">🗑</button>
+            <button class="iconbtn" id="closeDetailBtn">✕</button>
+          </div>
+        </div>
+        <div id="confirmArea"></div>
+        ${createdByDisplay ? `<div style="font-size:12px; color:#6B7268; margin-bottom:12px;">Cargado por <b>${esc(createdByDisplay)}</b>${history.length ? ` · <span id="toggleHistoryBtn" style="color:#1E4638; font-weight:600; cursor:pointer; text-decoration:underline;">${historyOpen ? "ocultar" : "ver"} historial (${history.length})</span>` : ""}</div>` : (history.length ? `<div style="font-size:12px; color:#6B7268; margin-bottom:12px;"><span id="toggleHistoryBtn" style="color:#1E4638; font-weight:600; cursor:pointer; text-decoration:underline;">${historyOpen ? "ocultar" : "ver"} historial (${history.length})</span></div>` : "")}
+        ${historyOpen ? `
+        <div style="background:#EDEEE6; border-radius:8px; padding:10px 12px; margin-bottom:16px; font-size:12px; max-height:160px; overflow-y:auto;">
+          ${history.map((h) => `<div style="padding:4px 0; border-bottom:1px solid #DFDBC9;"><b>${esc(h.action || "Cambio")}</b> — ${esc(h.user || "desconocido")} <span style="color:#6B7268;">· ${formatHistoryDate(h.timestamp)}</span></div>`).join("")}
+        </div>` : ""}
+        ${(() => {
+          const memberOf = preselections.filter((ps) => (ps.playerIds || []).includes(p.id));
+          if (memberOf.length === 0) return "";
+          return `<div style="background:#FBF6E8; border:1px solid #C9962B; border-radius:8px; padding:10px 12px; margin-bottom:16px;">
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#996B0E; font-weight:700; margin-bottom:6px;">📋 En preselección</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              ${memberOf.map((ps) => `<span data-goto-ps="${ps.id}" style="background:#fff; border:1px solid #EADFC0; color:#996B0E; font-size:12px; font-weight:600; padding:4px 10px; border-radius:20px; cursor:pointer;">${esc(ps.name)}</span>`).join("")}
+            </div>
+          </div>`;
+        })()}
+        <div class="tagrow" style="margin-bottom:18px;">
+          ${p.primaryPosition ? `<span class="tag">${esc(p.primaryPosition)}</span>` : ""}
+          ${p.secondaryPosition ? `<span class="tag">Var: ${esc(p.secondaryPosition)}</span>` : ""}
+          ${age ? `<span class="tag">${age} años</span>` : ""}
+          ${p.foot ? `<span class="tag">${esc(p.foot)}</span>` : ""}
+          ${p.height ? `<span class="tag">${esc(p.height)} cm</span>` : ""}
+          ${p.levelStatus ? `<span class="badge" style="background:${STATUS_COLORS[p.levelStatus]};">${esc(p.levelStatus)}</span>` : ""}
+          ${p.trackingStatus ? `<span class="badge" style="background:${TRACKING_COLORS[p.trackingStatus]};">${esc(p.trackingStatus)}</span>` : ""}
+        </div>
+        ${section("Resumen", p.summary)}
+        ${section("1 · Características técnicas", p.technical)}
+        ${section("2 · Características físicas", p.physical)}
+        ${section("3 · Características tácticas", p.tactical)}
+        ${section(`4 · Potencial${p.potentialHorizon ? " (horizonte: " + esc(p.potentialHorizon) + ")" : ""}`, p.potential)}
+        ${section("5 · Comparables", p.comparables)}
+        ${section("6 · Puntos débiles", p.weaknesses)}
+        ${section("Notas libres", p.notes)}
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:14px; border-top:1px solid #EDEEE6; font-size:12px; color:#6B7268;">
+          <div>${p.source ? "Fuente: " + esc(p.source) : ""}${p.reviewedOn ? " · Revisado: " + esc(p.reviewedOn) : ""}</div>
+          <div style="display:flex; gap:14px;">
+            ${p.youtubeUrl ? `<a href="${esc(p.youtubeUrl)}" target="_blank" rel="noreferrer" style="color:#B23A2E; font-weight:600; text-decoration:none;">▶ YouTube ↗</a>` : ""}
+            ${p.transfermarktUrl ? `<a href="${esc(p.transfermarktUrl)}" target="_blank" rel="noreferrer" style="color:#1E4638; font-weight:600; text-decoration:none;">Transfermarkt ↗</a>` : ""}
+          </div>
+        </div>
+      </div>
+    </div>`;
+    document.getElementById("detailOverlay").addEventListener("click", closeModal);
+    document.getElementById("closeDetailBtn").addEventListener("click", closeModal);
+    document.getElementById("editBtn").addEventListener("click", () => openForm(p));
+    document.getElementById("addToPsBtn").addEventListener("click", () => openPreselectionPicker(p));
+    document.getElementById("newReportFromPlayerBtn").addEventListener("click", () => openReportBuilder(null, { id: p.id, name: p.name, club: p.club }));
+    const toggleBtn = document.getElementById("toggleHistoryBtn");
+    if (toggleBtn) toggleBtn.addEventListener("click", () => { historyOpen = !historyOpen; render(); });
+    root.querySelectorAll("[data-goto-ps]").forEach((el) => {
+      el.addEventListener("click", () => { closeModal(); openPreselectionDetail(el.dataset.gotoPs); });
+    });
+    document.getElementById("deleteBtn").addEventListener("click", () => {
+      document.getElementById("confirmArea").innerHTML = `
+        <div class="confirm-box">
+          ¿Eliminar a ${esc(p.name)} del cuaderno? Esta acción no se puede deshacer.
+          <div style="margin-top:8px; display:flex; gap:8px;">
+            <button id="confirmDeleteBtn" style="background:#B23A2E; color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer;">Sí, eliminar</button>
+            <button id="cancelDeleteBtn" style="background:#fff; border:1px solid #CFCBBB; border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer;">Cancelar</button>
+          </div>
+        </div>`;
+      document.getElementById("confirmDeleteBtn").addEventListener("click", async () => {
+        const ok = await deletePlayerRemote(p.id);
+        if (ok) { closeModal(); await fetchPlayers(); showMessage(true, "Jugador eliminado."); }
+      });
+      document.getElementById("cancelDeleteBtn").addEventListener("click", () => { document.getElementById("confirmArea").innerHTML = ""; });
+    });
+  }
+  render();
+}
+function section(title, body) {
+  if (!body) return "";
+  return `<div class="section-title">${title}</div><div class="section-body">${esc(body)}</div>`;
+}
+function closeModal() { const r = document.getElementById("modalRoot"); if (r) r.innerHTML = ""; }
+
+function openPreselectionPicker(player) {
+  function render() {
+    const root = document.getElementById("modalRoot");
+    root.innerHTML = `
+    <div class="overlay" id="pickerOverlay">
+      <div class="modal" style="max-width:420px;" onclick="event.stopPropagation()">
+        <div class="modal-head">
+          <div class="disp" style="font-size:18px; font-weight:700;">Agregar a preselección</div>
+          <button class="iconbtn" id="closePickerBtn">✕</button>
+        </div>
+        <div style="font-size:13px; color:#6B7268; margin-bottom:12px;">${esc(player.name)}</div>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px; max-height:240px; overflow-y:auto;">
+          ${preselections.length === 0 ? `<div style="font-size:13px; color:#6B7268;">Todavía no tenés ninguna preselección creada.</div>` :
+            preselections.map((ps) => {
+              const checked = (ps.playerIds || []).includes(player.id);
+              return `<label style="display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;">
+                <input type="checkbox" data-ps-id="${ps.id}" ${checked ? "checked" : ""} style="width:16px; height:16px;">
+                ${esc(ps.name)} <span style="color:#6B7268; font-size:12px;">(${(ps.playerIds || []).length})</span>
+              </label>`;
+            }).join("")}
+        </div>
+        <div style="border-top:1px solid #EDEEE6; padding-top:14px;">
+          <label style="display:block; font-size:11px; text-transform:uppercase; color:#6B7268; font-weight:600; margin-bottom:6px;">Crear nueva</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="newPsName" placeholder="Ej: Preselección Octubre" style="flex:1;">
+            <button class="btn btn-gold" id="createPsBtn">Crear</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+    document.getElementById("pickerOverlay").addEventListener("click", closeModal);
+    document.getElementById("closePickerBtn").addEventListener("click", closeModal);
+    root.querySelectorAll("[data-ps-id]").forEach((cb) => {
+      cb.addEventListener("change", async (e) => {
+        await togglePlayerInPreselection(e.target.dataset.psId, player.id, e.target.checked);
+        render();
+      });
+    });
+    document.getElementById("createPsBtn").addEventListener("click", async () => {
+      const nameInput = document.getElementById("newPsName");
+      const name = nameInput.value.trim();
+      if (!name) { nameInput.focus(); return; }
+      const btn = document.getElementById("createPsBtn");
+      btn.disabled = true; btn.textContent = "Creando...";
+      await createPreselection(name, player.id);
+      render();
+      showMessage(true, `Se creó "${name}" y se agregó a ${player.name}.`);
+    });
+    document.getElementById("newPsName").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("createPsBtn").click();
+    });
+  }
+  render();
+}
+
+function openBrandingSettings() {
+  let pendingCrestUrl = branding.crestUrl || "";
+  function render() {
+    const root = document.getElementById("modalRoot");
+    root.innerHTML = `
+    <div class="overlay" id="brandOverlay">
+      <div class="modal" style="max-width:420px;" onclick="event.stopPropagation()">
+        <div class="modal-head">
+          <div class="disp" style="font-size:18px; font-weight:700;">Configuración de marca</div>
+          <button class="iconbtn" id="closeBrandBtn">✕</button>
+        </div>
+        <div style="font-size:13px; color:#6B7268; margin-bottom:16px;">Se aplica para todos los que usan esta base — cambiala cuando cambies de club.</div>
+
+        <div class="field" style="margin-bottom:14px;">
+          <label>Escudo del club</label>
+          <div style="display:flex; align-items:center; gap:12px; margin-top:6px;">
+            ${pendingCrestUrl ? `<img src="${pendingCrestUrl}" style="height:56px; width:56px; object-fit:contain; background:#EDEEE6; border-radius:8px;">` : `<div style="height:56px; width:56px; background:#EDEEE6; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#6B7268; text-align:center;">Sin escudo</div>`}
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <label class="btn btn-secondary" style="margin:0; font-size:13px; padding:7px 12px;">Subir imagen<input type="file" id="crestInput" accept="image/*" style="display:none;"></label>
+              ${pendingCrestUrl ? `<button class="btn btn-secondary" id="removeCrestBtn" style="font-size:13px; padding:7px 12px;">Quitar</button>` : ""}
+            </div>
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:10px;">
+          <label>Color principal (header)</label>
+          <input type="color" id="primaryColorInput" value="${branding.primaryColor || "#1E4638"}" style="width:100%; height:38px; padding:2px; cursor:pointer;">
+        </div>
+        <div class="field" style="margin-bottom:16px;">
+          <label>Color de acento</label>
+          <input type="color" id="accentColorInput" value="${branding.accentColor || "#C9962B"}" style="width:100%; height:38px; padding:2px; cursor:pointer;">
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="cancelBrandBtn">Cancelar</button>
+          <button class="btn btn-gold" id="saveBrandBtn">💾 Guardar</button>
+        </div>
+      </div>
+    </div>`;
+    document.getElementById("brandOverlay").addEventListener("click", closeModal);
+    document.getElementById("closeBrandBtn").addEventListener("click", closeModal);
+    document.getElementById("cancelBrandBtn").addEventListener("click", closeModal);
+    document.getElementById("crestInput").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      resizeImageToDataUrl(file, 220, (dataUrl) => { pendingCrestUrl = dataUrl; render(); });
+    });
+    const removeBtn = document.getElementById("removeCrestBtn");
+    if (removeBtn) removeBtn.addEventListener("click", () => { pendingCrestUrl = ""; render(); });
+    document.getElementById("saveBrandBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("saveBrandBtn");
+      btn.disabled = true; btn.textContent = "Guardando...";
+      const newBranding = {
+        primaryColor: document.getElementById("primaryColorInput").value,
+        accentColor: document.getElementById("accentColorInput").value,
+        crestUrl: pendingCrestUrl,
+      };
+      const ok = await saveBranding(newBranding);
+      if (ok) { closeModal(); renderApp(); showMessage(true, "Marca actualizada."); }
+      else { btn.disabled = false; btn.textContent = "💾 Guardar"; }
+    });
+  }
+  render();
+}
+
+function resizeImageToDataUrl(file, maxSize, callback) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > h && w > maxSize) { h = Math.round(h * (maxSize / w)); w = maxSize; }
+      else if (h > maxSize) { w = Math.round(w * (maxSize / h)); h = maxSize; }
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL("image/png"));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function openWipeConfirm() {
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `
+  <div class="overlay" id="wipeOverlay">
+    <div class="modal" style="max-width:420px;" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <div class="disp" style="font-size:18px; font-weight:700; color:#8A3B32;">⚠ Vaciar toda la base</div>
+        <button class="iconbtn" id="closeWipeBtn">✕</button>
+      </div>
+      <div class="confirm-box">
+        Esto borra <b>TODOS</b> los jugadores (${players.length}), preselecciones (${preselections.length}), formaciones (${lineups.length}), informes (${reports.length}) y sesiones de seguimiento en vivo (${liveSessions.length}) de forma permanente. No se puede deshacer.
+        <br><br>
+        Si estás seguro, escribí la palabra clave que solo vos conocés y confirmá.
+      </div>
+      <input type="password" id="wipeConfirmInput" placeholder="Palabra clave" style="margin-bottom:12px;">
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="btn btn-secondary" id="cancelWipeBtn">Cancelar</button>
+        <button class="btn" id="confirmWipeBtn" style="background:#8A3B32; color:#fff; opacity:0.5;" disabled>Vaciar base</button>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById("wipeOverlay").addEventListener("click", closeModal);
+  document.getElementById("closeWipeBtn").addEventListener("click", closeModal);
+  document.getElementById("cancelWipeBtn").addEventListener("click", closeModal);
+  const input = document.getElementById("wipeConfirmInput");
+  const confirmBtn = document.getElementById("confirmWipeBtn");
+  input.addEventListener("input", () => {
+    const ok = input.value.trim() === "clearall123";
+    confirmBtn.disabled = !ok;
+    confirmBtn.style.opacity = ok ? "1" : "0.5";
+  });
+  confirmBtn.addEventListener("click", async () => {
+    confirmBtn.disabled = true; confirmBtn.textContent = "Vaciando...";
+    const ok = await wipeAllData();
+    closeModal();
+    if (ok) { showMessage(true, "Base vaciada. Listo para empezar de nuevo."); renderApp(); }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Formulario
+// ---------------------------------------------------------------------------
+function openForm(initial) {
+  const form = initial ? { ...initial } : { ...EMPTY_PLAYER };
+  let mode = "manual";
+
+  function optHtml(list, val) {
+    return `<option value="">Seleccionar...</option>` + list.map((o) => `<option value="${esc(o)}" ${o === val ? "selected" : ""}>${esc(o)}</option>`).join("");
+  }
+
+  function render() {
+    const root = document.getElementById("modalRoot");
+    root.innerHTML = `
+    <div class="overlay" id="formOverlay">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-head">
+          <div class="disp" style="font-size:20px; font-weight:700;">${initial ? "Editar jugador" : "Nuevo jugador"}</div>
+          <button class="iconbtn" id="closeFormBtn">✕</button>
+        </div>
+        ${!initial ? `
+        <div class="tabs">
+          <button class="tabbtn ${mode === "manual" ? "active" : ""}" id="tabManual">Formulario manual</button>
+          <button class="tabbtn ${mode === "paste" ? "active" : ""}" id="tabPaste">📋 Pegar y estructurar <span style="font-size:10px; opacity:.7; font-weight:400;">(en desarrollo)</span></button>
+        </div>` : ""}
+        <div id="formBody"></div>
+      </div>
+    </div>`;
+    document.getElementById("formOverlay").addEventListener("click", closeModal);
+    document.getElementById("closeFormBtn").addEventListener("click", closeModal);
+    if (!initial) {
+      document.getElementById("tabManual").addEventListener("click", () => { mode = "manual"; render(); });
+      document.getElementById("tabPaste").addEventListener("click", () => { mode = "paste"; render(); });
+    }
+    if (mode === "paste") renderPasteBody(); else renderManualBody();
+  }
+
+  function renderPasteBody() {
+    const body = document.getElementById("formBody");
+    body.innerHTML = `
+      <div style="background:#EDEEE6; border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:12px; color:#4A4F45;">
+        ⚠ Esta función todavía está en desarrollo — requiere tu propia API key de pago de Anthropic.
+        Mientras tanto podés pegar la nota directamente en el chat de Claude y pedirle que te la estructure, sin costo extra.
+      </div>
+      <div class="apikey-box">
+        Esta función usa la API de Anthropic directamente desde tu navegador, así que necesita tu propia API key
+        (se guarda solo en este navegador).
+        <input type="text" id="apiKeyInput" placeholder="sk-ant-..." value="${esc(localStorage.getItem(APIKEY_KEY) || "")}">
+      </div>
+      <div style="font-size:13px; color:#6B7268; margin-bottom:8px;">Pegá tus notas de cancha o el texto de un perfil. La IA arma la ficha; la revisás antes de guardar.</div>
+      <textarea id="pasteText" rows="10" placeholder="Ej: Vi a Fulano de tal jugando de lateral derecho en Tigre..."></textarea>
+      <div id="parseError" style="color:#B23A2E; font-size:13px; margin-top:8px;"></div>
+      <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+        <button class="btn" id="parseBtn" style="background:#1E4638; color:#fff;">Estructurar ficha</button>
+      </div>`;
+    document.getElementById("parseBtn").addEventListener("click", runParse);
+  }
+
+  async function runParse() {
+    const apiKey = document.getElementById("apiKeyInput").value.trim();
+    const text = document.getElementById("pasteText").value.trim();
+    const errEl = document.getElementById("parseError");
+    errEl.textContent = "";
+    if (!apiKey) { errEl.textContent = "Falta tu API key de Anthropic."; return; }
+    if (!text) return;
+    localStorage.setItem(APIKEY_KEY, apiKey);
+    const btn = document.getElementById("parseBtn");
+    btn.disabled = true; btn.innerHTML = `<span class="spin">⟳</span> Estructurando...`;
+    const systemPrompt = `Sos un asistente que estructura notas de scouting de fútbol en JSON para un scout argentino.
+Devolvé SOLO un objeto JSON válido, sin texto adicional, sin backticks, con exactamente estas claves (todas string):
+name, club, league, primaryPosition, secondaryPosition, foot, height, dob, summary, technical, physical, tactical, potential, potentialHorizon, comparables, weaknesses, transfermarktUrl.
+Reglas:
+- Usá español rioplatense futbolístico.
+- Si un dato no está presente en el texto, dejá ese campo como string vacío "". NUNCA inventes datos.
+- primaryPosition y potentialHorizon, si podés inferirlos con confianza, usá alguno de estos valores exactos:
+  Posiciones: ${POSITIONS.join(", ")}
+  Horizontes de potencial: ${HORIZONS.join(", ")}
+- height en centímetros solo el número si está explícito, si no "".
+- dob en formato YYYY-MM-DD solo si está explícito, si no "".
+
+TEXTO A ESTRUCTURAR:
+"""${text}"""`;
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1000, messages: [{ role: "user", content: systemPrompt }] }),
+      });
+      const data = await response.json();
+      if (data.error) throw new Error(data.error.message || "Error de la API");
+      const textBlocks = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
+      const clean = textBlocks.replace(/```json|```/g, "").trim();
+      const obj = JSON.parse(clean);
+      Object.assign(form, obj);
+      mode = "manual";
+      render();
+    } catch (e) {
+      errEl.textContent = "No se pudo estructurar (" + e.message + "). Probá de nuevo o cargá a mano.";
+      btn.disabled = false; btn.textContent = "Estructurar ficha";
+    }
+  }
+
+  function renderManualBody() {
+    const body = document.getElementById("formBody");
+    body.innerHTML = `
+      <div class="form-grid">
+        <div class="field full"><label>Nombre *</label><input type="text" id="f_name" value="${esc(form.name)}"></div>
+        <div class="field"><label>Club actual</label><input type="text" id="f_club" value="${esc(form.club)}" list="clubDatalist"></div>
+        <datalist id="clubDatalist">${getClubSuggestions().map((c) => `<option value="${esc(c)}">`).join("")}</datalist>
+        <div class="field"><label>Categoría / Liga</label><select id="f_league">${optHtml(LEAGUES, form.league)}</select></div>
+        <div class="field"><label>Posición principal</label><select id="f_primaryPosition">${optHtml(POSITIONS, form.primaryPosition)}</select></div>
+        <div class="field"><label>Posición secundaria</label><select id="f_secondaryPosition"><option value="">Ninguna</option>${POSITIONS.map((o) => `<option value="${esc(o)}" ${o === form.secondaryPosition ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></div>
+        <div class="field"><label>Pie hábil</label><select id="f_foot">${optHtml(FOOT, form.foot)}</select></div>
+        <div class="field"><label>Altura (cm)</label><input type="number" id="f_height" value="${esc(form.height)}"></div>
+        <div class="field"><label>Fecha de nacimiento</label><input type="date" id="f_dob" value="${esc(form.dob)}"></div>
+        <div class="field"><label>Nivel</label><select id="f_levelStatus">${optHtml(LEVEL_STATUS, form.levelStatus)}</select></div>
+        <div class="field"><label>Estado de seguimiento</label><select id="f_trackingStatus">${TRACKING_STATUS.map((o) => `<option value="${esc(o)}" ${o === form.trackingStatus ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></div>
+        <div class="field"><label>Fuente del dato</label><select id="f_source">${optHtml(SOURCES, form.source)}</select></div>
+        <div class="field"><label>Fecha de revisión</label><input type="date" id="f_reviewedOn" value="${esc(form.reviewedOn)}"></div>
+        <div class="field full"><label>Link Transfermarkt</label><input type="text" id="f_transfermarktUrl" value="${esc(form.transfermarktUrl)}" placeholder="https://..."></div>
+        <div class="field full"><label>Link de YouTube</label><input type="text" id="f_youtubeUrl" value="${esc(form.youtubeUrl)}" placeholder="https://youtube.com/..."></div>
+      </div>
+      <div class="field"><label>Resumen corto</label><textarea id="f_summary" rows="2">${esc(form.summary)}</textarea></div>
+      <div class="field"><label>1 · Características técnicas</label><textarea id="f_technical" rows="2">${esc(form.technical)}</textarea></div>
+      <div class="field"><label>2 · Características físicas</label><textarea id="f_physical" rows="2">${esc(form.physical)}</textarea></div>
+      <div class="field"><label>3 · Características tácticas</label><textarea id="f_tactical" rows="2">${esc(form.tactical)}</textarea></div>
+      <div class="form-grid">
+        <div class="field"><label>4 · Potencial</label><textarea id="f_potential" rows="2">${esc(form.potential)}</textarea></div>
+        <div class="field"><label>Horizonte de proyección</label><select id="f_potentialHorizon">${optHtml(HORIZONS, form.potentialHorizon)}</select></div>
+      </div>
+      <div class="field"><label>5 · Comparables</label><textarea id="f_comparables" rows="2">${esc(form.comparables)}</textarea></div>
+      <div class="field"><label>6 · Puntos débiles</label><textarea id="f_weaknesses" rows="2">${esc(form.weaknesses)}</textarea></div>
+      <div class="field"><label>Notas libres</label><textarea id="f_notes" rows="2">${esc(form.notes)}</textarea></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelFormBtn">Cancelar</button>
+        <button class="btn btn-gold" id="saveFormBtn">💾 Guardar</button>
+      </div>`;
+    document.getElementById("cancelFormBtn").addEventListener("click", closeModal);
+    document.getElementById("saveFormBtn").addEventListener("click", doSave);
+  }
+
+  function collectForm() {
+    PLAYER_FIELDS.forEach((k) => { const el = document.getElementById("f_" + k); if (el) form[k] = el.value; });
+  }
+
+  async function doSave() {
+    collectForm();
+    if (!form.name.trim()) { alert("El nombre es obligatorio."); return; }
+    const saveBtn = document.getElementById("saveFormBtn");
+    saveBtn.disabled = true; saveBtn.textContent = "Guardando...";
+    const ok = form.id ? await updatePlayer(form) : await insertPlayer(form);
+    if (ok) { closeModal(); await fetchPlayers(); showMessage(true, "Jugador guardado."); }
+    else { saveBtn.disabled = false; saveBtn.textContent = "💾 Guardar"; }
+  }
+
+  render();
+}
+
+// ---------------------------------------------------------------------------
+// Importar
+// ---------------------------------------------------------------------------
+function handleImport(file) {
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    try {
+      const incoming = JSON.parse(ev.target.result);
+      if (!Array.isArray(incoming)) throw new Error("no es una lista");
+      const clean = incoming.map((p) => ({ ...EMPTY_PLAYER, ...p, id: undefined }));
+      const ok = await bulkInsert(clean);
+      if (ok) { await fetchPlayers(); showMessage(true, `Se importaron ${clean.length} jugadores.`); }
+    } catch (e) {
+      showMessage(false, "No se pudo leer el archivo. Verificá que sea un JSON válido.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+boot();
+</script>
+</body>
+</html>
